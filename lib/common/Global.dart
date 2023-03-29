@@ -10,6 +10,7 @@ class Global{
   static Future init() async {
     userProfile = User("Mayor", "images/avatar.png");
     userLab = UserLab();
+    print("app start");
     return;
   }
 
