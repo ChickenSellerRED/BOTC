@@ -25,7 +25,7 @@ class WaitInRoomPageState extends State<WaitInRoomPage>{
    late List<User> users;
   @override
   void initState() {
-    channel = IOWebSocketChannel.connect('ws://10.0.2.2:3000');
+    channel = IOWebSocketChannel.connect('ws://10.0.2.2:3000',headers: Global.userProfile.toHeader());
     users = <User>[];
     channel.sink.add(jsonEncode({
       "verb":"create_room",
@@ -36,12 +36,11 @@ class WaitInRoomPageState extends State<WaitInRoomPage>{
     }));
   }
 
-
-   @override
-  void setState(VoidCallback fn) {
-
+  void addOneMemberList(dynamic member){
+    setState(()=>{
+        users.add(User.buildFromJSON(member))
+    });
   }
-
   void _exitRoom(){}
   Widget build(BuildContext context) {
     return Scaffold(
@@ -63,15 +62,17 @@ class WaitInRoomPageState extends State<WaitInRoomPage>{
                 SizedBox(
                   width: 300,
                   height: 200,
-
                   child: StreamBuilder(
                     stream:channel.stream,
                     builder:(context, snapshot){
                       if(snapshot.hasData){
-                        String verb = jsonDecode(snapshot.data as String)["verb"];
-                        //todo:memberlist输出空值 待解决
-                        if(verb == "create_room_success")
-                          print(jsonDecode(snapshot.data as String)["memberList"]);
+                        dynamic JSONData = jsonDecode(snapshot.data as String);
+                        if(JSONData["verb"] == "create_room_success"){
+                          // addOneMemberList(JSONData["memberList"][0]);
+                          users.add(User.buildFromJSON(JSONData["memberList"][0]));
+                        }else if(JSONData["verb"] == "someone_join_room"){
+                          users.add(User.buildFromJSON(JSONData["user"]));
+                        }
                       }
                       return GridView.builder(
                           scrollDirection: Axis.vertical,
