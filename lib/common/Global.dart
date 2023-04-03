@@ -5,7 +5,7 @@ class Global{
   static bool isLoggedIn = false;
   static late UserLab userLab;
   static bool isOnline = false;
-
+  static late dynamic channel;
 
   static Future init() async {
     userProfile = User("Mayor", "images/avatar.png");

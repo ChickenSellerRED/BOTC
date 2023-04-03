@@ -1,6 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import "package:flutter/material.dart";
 import "package:my_flutter_app/Models/Room.dart";
+import "package:web_socket_channel/io.dart";
 import "../common/Global.dart";
 import "../Models/User.dart";
 

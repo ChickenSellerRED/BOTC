@@ -9,6 +9,7 @@ import 'package:web_socket_channel/io.dart';
 import '../common/Global.dart';
 import '../Models/User.dart';
 import 'dart:convert';
+import '../common/Global.dart';
 
 class WaitInRoomPage extends StatefulWidget{
   final Room _room;
@@ -21,19 +22,18 @@ class WaitInRoomPage extends StatefulWidget{
 }
 
 class WaitInRoomPageState extends State<WaitInRoomPage>{
-   late final channel;
    late List<User> users;
   @override
   void initState() {
-    channel = IOWebSocketChannel.connect('ws://10.0.2.2:3000',headers: Global.userProfile.toHeader());
+    Global.channel = IOWebSocketChannel.connect('ws://10.0.2.2:3000',headers: Global.userProfile.toHeader());
     users = <User>[];
-    channel.sink.add(jsonEncode({
-      "verb":"create_room",
-      "body":{
-        "maxPeople":998,
-        "name":"五影会谈",
-      }
-    }));
+    // Global.channel.sink.add(jsonEncode({
+    //   "verb":"create_room",
+    //   "body":{
+    //     "maxPeople":998,
+    //     "name":"五影会谈",
+    //   }
+    // }));
   }
 
   void addOneMemberList(dynamic member){
@@ -41,7 +41,11 @@ class WaitInRoomPageState extends State<WaitInRoomPage>{
         users.add(User.buildFromJSON(member))
     });
   }
-  void _exitRoom(){}
+  void _exitRoom(){
+    Global.channel.sink.close();
+    Global.channel = null;
+    Navigator.of(context).pop();
+  }
   Widget build(BuildContext context) {
     return Scaffold(
         appBar: AppBar(),
@@ -63,18 +67,26 @@ class WaitInRoomPageState extends State<WaitInRoomPage>{
                   width: 300,
                   height: 200,
                   child: StreamBuilder(
-                    stream:channel.stream,
+                    stream:Global.channel.stream,
                     builder:(context, snapshot){
-                      if(snapshot.hasData){
-                        dynamic JSONData = jsonDecode(snapshot.data as String);
-                        if(JSONData["verb"] == "create_room_success"){
-                          // addOneMemberList(JSONData["memberList"][0]);
-                          users.add(User.buildFromJSON(JSONData["memberList"][0]));
-                        }else if(JSONData["verb"] == "someone_join_room"){
-                          users.add(User.buildFromJSON(JSONData["user"]));
-                        }
-                      }
-                      return GridView.builder(
+                      print(snapshot.connectionState);
+                      print(Global.channel.closeCode);
+                      print(Global.channel.closeReason);
+                      if(Global.channel.closeCode!=null)
+                        Navigator.of(context).pop();
+                      // if(snapshot.hasData){
+                      //   dynamic JSONData = jsonDecode(snapshot.data as String);
+                      //   if(JSONData["verb"] == "create_room_success"){
+                      //     // addOneMemberList(JSONData["memberList"][0]);
+                      //     users.add(User.buildFromJSON(JSONData["memberList"][0]));
+                      //   }else if(JSONData["verb"] == "someone_join_room") {
+                      //     users.add(User.buildFromJSON(JSONData["user"]));
+                      //   }else if(JSONData["verb"] == "someone_exit_room"){
+                      //     users.removeWhere((u) => u.equals(User.buildFromJSON(JSONData["user"])));
+                      //   }
+                      // }
+                      return
+                        GridView.builder(
                           scrollDirection: Axis.vertical,
                           gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 2),
                           itemCount: this.users.length,

@@ -21,7 +21,6 @@ class User{
       // "friend_code":_friendCode,
       "uuid":_uuid
     };
-    print(ans);
     return ans;
   }
 
@@ -34,5 +33,9 @@ class User{
   void setCodeAndUuid(dynamic JSONData){
     // _friendCode = JSONData["friend_code"];
     _uuid = JSONData["uuid"];
+  }
+
+  bool equals(User u){
+    return _uuid == u._uuid;
   }
 }
