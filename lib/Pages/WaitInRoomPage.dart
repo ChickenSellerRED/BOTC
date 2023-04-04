@@ -11,108 +11,137 @@ import '../Models/User.dart';
 import 'dart:convert';
 import '../common/Global.dart';
 
-class WaitInRoomPage extends StatefulWidget{
-  final Room _room;
+class WaitInRoomPageArgs {
+  late String _name;
+  late int _maxPeople;
+  late int _roomNumber;
+  late bool _isCreateRoom;
 
-  WaitInRoomPage(this._room);
+  WaitInRoomPageArgs.fromJoin(this._roomNumber) {
+    _isCreateRoom = false;
+  }
+
+  WaitInRoomPageArgs.fromCreate(this._name, this._maxPeople) {
+    _isCreateRoom = true;
+  }
+
+  bool get isCreateRoom => _isCreateRoom;
+
+  int get maxPeople => _maxPeople;
+
+  String get name => _name;
+
+  int get roomNumber => _roomNumber;
+}
+
+class WaitInRoomPage extends StatefulWidget {
+  final WaitInRoomPageArgs _args;
+
+  WaitInRoomPageArgs get args => _args;
+
+  WaitInRoomPage(this._args);
 
   @override
   State<StatefulWidget> createState() => WaitInRoomPageState();
-
 }
 
-class WaitInRoomPageState extends State<WaitInRoomPage>{
-   late List<User> users;
+class WaitInRoomPageState extends State<WaitInRoomPage> {
+  late Room _room;
+  late List<User> _users;
+
   @override
   void initState() {
-    Global.channel = IOWebSocketChannel.connect('ws://10.0.2.2:3000',headers: Global.userProfile.toHeader());
-    users = <User>[];
-    // Global.channel.sink.add(jsonEncode({
-    //   "verb":"create_room",
-    //   "body":{
-    //     "maxPeople":998,
-    //     "name":"五影会谈",
-    //   }
-    // }));
+    super.initState();
+    _room = new Room.buildDefault();
+    _users = <User>[];
+    Global.channel.sink.add(jsonEncode({
+      "verb": widget.args.isCreateRoom ? "create_room" : "join_room",
+      "body": widget.args.isCreateRoom
+          ? {
+              "max_people": widget.args.maxPeople,
+              "name": widget.args.name,
+            }
+          : {
+              "room_number": widget.args.roomNumber,
+            }
+    }));
   }
 
-  void addOneMemberList(dynamic member){
-    setState(()=>{
-        users.add(User.buildFromJSON(member))
-    });
+  void addOneMemberList(dynamic member) {
+    setState(() => {_users.add(User.buildFromJSON(member))});
   }
-  void _exitRoom(){
+
+  void _exitRoom() {
     Global.channel.sink.close();
     Global.channel = null;
     Navigator.of(context).pop();
   }
+
   Widget build(BuildContext context) {
     return Scaffold(
         appBar: AppBar(),
-        body:Center(
-          child: Column(
-              children:<Widget>[
-                Text("Home:" + widget._room.name + "HomeOwner:" + widget._room.homeOwner.name),
+        body: StreamBuilder(
+          stream: Global.stream!,
+          builder: (context, snapshot) {
+            print(snapshot.connectionState);
+            print(Global.channel.closeCode);
+            print(Global.channel.closeReason);
+            if (Global.channel.closeCode != null) {
+              print("Server Close Code:" + Global.channel.closeCode.toString());
+              if(Global.channel.closeReason != null)
+                print("Close Reason:" + Global.channel.closeReason);
+              Navigator.of(context).pop();
+              return const Text("Connection Closed!");
+            } else if (snapshot.hasData && snapshot.data == "connect success") {
+              print("connect success");
+            } else if (snapshot.hasData) {
+              dynamic jsonData = jsonDecode(snapshot.data as String);
+              if (jsonData["verb"] == "create_room_success") {
+                _room = Room.buildFromJSON(jsonData["room"]);
+                _users.add(_room!.homeOwner);
+              } else if (jsonData["verb"] == "someone_join_room") {
+                _users.add(User.buildFromJSON(jsonData["user"]));
+              } else if (jsonData["verb"] == "someone_exit_room") {
+                _users.removeWhere(
+                    (u) => u.equals(User.buildFromJSON(jsonData["user"])));
+              }
+            }
+            return Center(
+              child: Column(children: <Widget>[
+                Text("Room:${_room?.name}\tHomeOwner:${_room?.homeOwner.name}\tRoomNumber:${_room?.roomNumber}"),
                 Row(
                   children: <Widget>[
-                    Image(
+                    const Image(
                       image: AssetImage("images/avatar.png"),
                       width: 50,
                       height: 50,
                     ),
-                    Text((Global.userProfile as User).name)
+                    Text(Global.userProfile.name)
                   ],
                 ),
                 SizedBox(
-                  width: 300,
-                  height: 200,
-                  child: StreamBuilder(
-                    stream:Global.channel.stream,
-                    builder:(context, snapshot){
-                      print(snapshot.connectionState);
-                      print(Global.channel.closeCode);
-                      print(Global.channel.closeReason);
-                      if(Global.channel.closeCode!=null)
-                        Navigator.of(context).pop();
-                      // if(snapshot.hasData){
-                      //   dynamic JSONData = jsonDecode(snapshot.data as String);
-                      //   if(JSONData["verb"] == "create_room_success"){
-                      //     // addOneMemberList(JSONData["memberList"][0]);
-                      //     users.add(User.buildFromJSON(JSONData["memberList"][0]));
-                      //   }else if(JSONData["verb"] == "someone_join_room") {
-                      //     users.add(User.buildFromJSON(JSONData["user"]));
-                      //   }else if(JSONData["verb"] == "someone_exit_room"){
-                      //     users.removeWhere((u) => u.equals(User.buildFromJSON(JSONData["user"])));
-                      //   }
-                      // }
-                      return
-                        GridView.builder(
-                          scrollDirection: Axis.vertical,
-                          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 2),
-                          itemCount: this.users.length,
-                          itemBuilder: (context,index){
-                          return UserCardWidget(this.users[index]);
-                        },
-                      );
-                  }
-                    ,
-                  )
-
-                ),
+                    width: 300,
+                    height: 200,
+                    child: GridView.builder(
+                      scrollDirection: Axis.vertical,
+                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 2),
+                      itemCount: _users.length,
+                      itemBuilder: (context, index) {
+                        return UserCardWidget(_users[index]);
+                      },
+                    )),
                 Row(
                   children: <Widget>[
                     ElevatedButton(
-                      child: Text("Exit Room!"),
                       onPressed: _exitRoom,
+                      child: const Text("Exit Room!"),
                     ),
                     Text("Time to start: 05:00")
                   ],
                 )
-
-              ]
-
-          ),
-        )
-    );
+              ]),
+            );
+          },
+        ));
   }
 }

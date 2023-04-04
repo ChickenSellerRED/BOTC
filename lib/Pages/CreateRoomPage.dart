@@ -4,6 +4,7 @@ import "package:my_flutter_app/Models/Room.dart";
 import "package:web_socket_channel/io.dart";
 import "../common/Global.dart";
 import "../Models/User.dart";
+import "WaitInRoomPage.dart";
 
 
 class CreateRoomPage extends StatefulWidget{
@@ -22,9 +23,17 @@ class CreateRoomPageState extends State<CreateRoomPage>{
   TextEditingController _maxPeopleController = TextEditingController();
   void _creatRoom(){
     if(!Global.isOnline){
+      Global.channel = IOWebSocketChannel.connect('ws://10.0.2.2:3000',
+          headers: Global.userProfile.toHeader());
+      Global.stream = Global.channel.stream.asBroadcastStream();
+      Global.stream.listen(
+        (event){
+          print(event);
+        }
+      );
       var result = Navigator.of(context).pushNamed(
           "WaitInRoomPage",
-          arguments: Room(Global.userProfile as User, int.parse(_maxPeopleController.text),_nameController.text)
+          arguments: WaitInRoomPageArgs.fromCreate(_nameController.text, int.parse(_maxPeopleController.text))
       );
       print("路由返回值：$result");
     }

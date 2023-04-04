@@ -6,7 +6,7 @@ class User{
   String _name;
   String _avatarUri;
   String? _friendCode;
-  String? _uuid;
+  late String? _uuid;
 
   User(this._name, this._avatarUri){
     // _friendCode = Random().nextInt(100000000).toString();
@@ -24,11 +24,15 @@ class User{
     return ans;
   }
 
-  static User buildFromJSON(dynamic JSONData){
-    User ans = new User(JSONData["name"],JSONData["avatar_uri"]);
-    ans.setCodeAndUuid(JSONData);
-    return ans;
-  }
+  User.buildFromJSON(dynamic json):
+    _name = json["name"],
+    _avatarUri = json["avatar_uri"],
+    _uuid = json["uuid"];
+
+  User.buildDefault():
+    _name = "     ",
+    _avatarUri = "images/avatar.png";
+
 
   void setCodeAndUuid(dynamic JSONData){
     // _friendCode = JSONData["friend_code"];

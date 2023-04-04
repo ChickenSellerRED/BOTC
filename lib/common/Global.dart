@@ -6,6 +6,7 @@ class Global{
   static late UserLab userLab;
   static bool isOnline = false;
   static late dynamic channel;
+  static late dynamic stream;
 
   static Future init() async {
     userProfile = User("Mayor", "images/avatar.png");

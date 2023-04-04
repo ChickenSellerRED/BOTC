@@ -6,17 +6,28 @@ class Room{
   User _homeOwner;
   int _maxpeople;
   String _name;
-  late int _roomNumber;
+  int _roomNumber;
 
-
-  void _generateRoomNumber(){
-    _roomNumber = Random().nextInt(100000000);
-  }
-  Room(this._homeOwner,this._maxpeople,this._name) {
-    _generateRoomNumber();
-  }
+  Room(this._homeOwner,this._maxpeople,this._name,this._roomNumber);
 
   String get name => _name;
 
   User get homeOwner => _homeOwner;
+
+  int get maxpeople => _maxpeople;
+
+  int get roomNumber => _roomNumber;
+
+  Room.buildFromJSON(dynamic json):
+    _homeOwner  = User.buildFromJSON(json["homeOwner"]),
+    _maxpeople  = json["maxPeople"],
+    _name       = json["name"],
+    _roomNumber = json["roomNumber"];
+
+  Room.buildDefault():
+    _homeOwner = User.buildDefault(),
+    _maxpeople = 10,
+    _name = "     ",
+    _roomNumber = -1;
+
 }

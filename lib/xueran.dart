@@ -8,6 +8,7 @@ import "Models/Room.dart";
 import "Pages/EnterRoomPage.dart";
 import "Pages/SwitchGameModePage.dart";
 import "common/Global.dart";
+import 'Pages/WaitInRoomPage.dart';
 
 void main(){
   Global.init();
@@ -44,7 +45,7 @@ class BOTC extends StatelessWidget{
             // correct screen.
             return MaterialPageRoute(
               builder: (context) {
-                return WaitInRoomPage(settings.arguments as Room);
+                return WaitInRoomPage(settings.arguments as WaitInRoomPageArgs);
               },
             );
           }
