@@ -2,6 +2,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:web_socket_channel/io.dart';
 
+import '../Models/Room.dart';
 import '../common/Global.dart';
 
 class SwitchGameModePage extends StatefulWidget{
@@ -26,7 +27,10 @@ class SwitchGameModePageState extends State<SwitchGameModePage>{
     Global.isOnline = false;
   }
   void startOnlineMode(){
-    print("startOnlineMode");
+    Navigator.of(context).pushNamed(
+        "GamePage",
+        arguments:Room.buildDefault()
+    );
   }
   @override
   Widget build(BuildContext context) {

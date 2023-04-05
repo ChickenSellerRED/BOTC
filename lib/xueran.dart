@@ -6,6 +6,7 @@ import "package:my_flutter_app/Pages/JoinRoomPage.dart";
 import "package:my_flutter_app/Pages/WaitInRoomPage.dart";
 import "Models/Room.dart";
 import "Pages/EnterRoomPage.dart";
+import "Pages/GamePage.dart";
 import "Pages/SwitchGameModePage.dart";
 import "common/Global.dart";
 import 'Pages/WaitInRoomPage.dart';
@@ -36,16 +37,15 @@ class BOTC extends StatelessWidget{
         onGenerateRoute:(RouteSettings settings){
           print(settings.toString());
           if (settings.name == "WaitInRoomPage") {
-            // Cast the arguments to the correct
-            // type: ScreenArguments.
-            print(settings.arguments.toString());
-
-            // Then, extract the required data from
-            // the arguments and pass the data to the
-            // correct screen.
             return MaterialPageRoute(
               builder: (context) {
                 return WaitInRoomPage(settings.arguments as WaitInRoomPageArgs);
+              },
+            );
+          }else if(settings.name == "GamePage"){
+            return MaterialPageRoute(
+              builder: (context) {
+                return GamePage(settings.arguments as Room);
               },
             );
           }

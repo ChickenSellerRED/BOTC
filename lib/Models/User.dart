@@ -6,15 +6,15 @@ class User{
   String _name;
   String _avatarUri;
   String? _friendCode;
-  late String? _uuid;
+  String _uuid;
 
-  User(this._name, this._avatarUri){
-    // _friendCode = Random().nextInt(100000000).toString();
+  User(this._name, this._avatarUri):
     _uuid = new Uuid().v4();
-    print(_uuid);
-  }
 
   String get name => _name;
+
+
+  String get uuid => _uuid;
 
   Map<String,dynamic> toHeader(){
     Map<String,dynamic> ans = {"name":_name,"avatar_uri":_avatarUri,
@@ -31,7 +31,8 @@ class User{
 
   User.buildDefault():
     _name = "     ",
-    _avatarUri = "images/avatar.png";
+    _avatarUri = "images/avatar.png",
+    _uuid = "default uuid";
 
 
   void setCodeAndUuid(dynamic JSONData){

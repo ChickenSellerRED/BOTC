@@ -76,7 +76,11 @@ class WaitInRoomPageState extends State<WaitInRoomPage> {
     Global.channel = null;
     Navigator.of(context).pop();
   }
-
+  void _startGame(){
+    Global.channel.sink.add(jsonEncode({
+      "verb":"start_game"
+    }));
+  }
   Widget build(BuildContext context) {
     return Scaffold(
         appBar: AppBar(),
@@ -96,7 +100,12 @@ class WaitInRoomPageState extends State<WaitInRoomPage> {
               print("connect success");
             } else if (snapshot.hasData) {
               dynamic jsonData = jsonDecode(snapshot.data as String);
-              if (jsonData["verb"] == "create_room_success") {
+              if (jsonData["verb"] == "game_started"){
+                Navigator.of(context).pushNamed(
+                    "GamePage",
+                    arguments:_room
+                );
+              }else if (jsonData["verb"] == "create_room_success") {
                 _room = Room.buildFromJSON(jsonData["room"]);
                 _users.add(_room!.homeOwner);
               } else if (jsonData["verb"] == "someone_join_room") {
@@ -132,9 +141,13 @@ class WaitInRoomPageState extends State<WaitInRoomPage> {
                     )),
                 Row(
                   children: <Widget>[
+                    _room.homeOwner.equals(Global.userProfile)?ElevatedButton(
+                    onPressed: _startGame,
+                    child: const Text("Start Game"),
+                  ):SizedBox(),
                     ElevatedButton(
                       onPressed: _exitRoom,
-                      child: const Text("Exit Room!"),
+                      child: const Text("Exit Room"),
                     ),
                     Text("Time to start: 05:00")
                   ],
