@@ -9,16 +9,16 @@ import 'package:flutter_chat_ui/flutter_chat_ui.dart';
 import 'dart:convert';
 import 'dart:math';
 
-class GamePage extends StatefulWidget{
+class GamePage extends StatefulWidget {
   Room _room;
 
   GamePage(this._room);
 
   @override
-  State createState()=>GamePageState();
+  State createState() => GamePageState();
 }
 
-class GamePageState extends State<GamePage>{
+class GamePageState extends State<GamePage> {
 //todo:禁用系统返回
   final PageController _pageController = PageController(
     initialPage: 0,
@@ -27,20 +27,15 @@ class GamePageState extends State<GamePage>{
   int bottomSelectedIndex = 0;
 
   final List<types.Message> _messages = [];
-  final _user = const types.User(id: '82091008-a484-4a89-ae75-a22bf8d6f3ac',
-    firstName: "Jize",
-    lastName: "Bi");
+  final _user = const types.User(
+      id: '82091008-a484-4a89-ae75-a22bf8d6f3ac',
+      firstName: "Jize",
+      lastName: "Bi");
 
   List<BottomNavigationBarItem> buildBottomNavBarItems() {
     return [
-      BottomNavigationBarItem(
-          icon: new Icon(Icons.home),
-          label: "Seat"
-      ),
-      BottomNavigationBarItem(
-        icon: new Icon(Icons.search),
-        label: "Chat"
-      ),
+      BottomNavigationBarItem(icon: new Icon(Icons.home), label: "Seat"),
+      BottomNavigationBarItem(icon: new Icon(Icons.search), label: "Chat"),
     ];
   }
 
@@ -61,14 +56,15 @@ class GamePageState extends State<GamePage>{
     _addMessage(textMessage);
 
     final otherMessage = types.TextMessage(
-      author: types.User(id: '82091001-a484-4a89-ae75-a22bf8d6f3ac',
+      author: types.User(
+          id: '82091001-a484-4a89-ae75-a22bf8d6f3ac',
           firstName: "Jize",
           lastName: "Bi"),
       createdAt: DateTime.now().millisecondsSinceEpoch,
       id: randomString(),
       text: "朕知道了",
     );
-    var timer = Timer(Duration(seconds: 1),()=>_addMessage(otherMessage));
+    var timer = Timer(Duration(seconds: 1), () => _addMessage(otherMessage));
     // timer.cancel();
   }
 
@@ -81,10 +77,8 @@ class GamePageState extends State<GamePage>{
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: PreferredSize(
-        preferredSize: Size.fromHeight(0.0),
-        child:AppBar()
-      ),
+      appBar:
+          PreferredSize(preferredSize: Size.fromHeight(0.0), child: AppBar()),
       body: PageView(
         controller: _pageController,
         onPageChanged: (index) {
@@ -96,32 +90,36 @@ class GamePageState extends State<GamePage>{
           ),
           Row(
             children: <Widget>[
-              NavigationRail(
-                selectedIndex: _selectedChatIndex,
-                onDestinationSelected: (int index) {
-                  setState(() {
-                    _selectedChatIndex = index;
-                  });
-                },
-                labelType: NavigationRailLabelType.selected,
-                destinations: [
-                  NavigationRailDestination(
-                    icon: Icon(Icons.favorite_border),
-                    selectedIcon: Icon(Icons.favorite),
-                    label: Text('First'),
-                  ),
-                  NavigationRailDestination(
-                    icon: Icon(Icons.bookmark_border),
-                    selectedIcon: Icon(Icons.book),
-                    label: Text('Second'),
-                  ),
-                  NavigationRailDestination(
-                    icon: Icon(Icons.star_border),
-                    selectedIcon: Icon(Icons.star),
-                    label: Text('Third'),
-                  ),
-                ],
-              ),
+              LayoutBuilder(builder: (context, constraint) {
+                print(constraint.maxHeight);
+                //todo:解决项比较少时，滚动不固定的问题
+                return Padding(
+                    padding: EdgeInsets.all(0),
+                    child: SingleChildScrollView(
+                      child: ConstrainedBox(
+                          constraints: BoxConstraints(minHeight: 657),
+                          child: IntrinsicHeight(
+                            child: NavigationRail(
+                                selectedIndex: _selectedChatIndex,
+                                onDestinationSelected: (int index) {
+                                  setState(() {
+                                    _selectedChatIndex = index;
+                                  });
+                                },
+                                labelType: NavigationRailLabelType.selected,
+                                destinations:
+                                    List<NavigationRailDestination>.generate(
+                                        9,
+                                        (index) => NavigationRailDestination(
+                                              icon: Icon(Icons.favorite_border),
+                                              selectedIcon:
+                                                  Icon(Icons.favorite),
+                                              label: Text('First'),
+                                            ))),
+                          )),
+                    ));
+              }),
+
               VerticalDivider(thickness: 1, width: 1),
               // This is the main content.
               Expanded(
@@ -152,7 +150,8 @@ class GamePageState extends State<GamePage>{
   void bottomTapped(int index) {
     setState(() {
       bottomSelectedIndex = index;
-      _pageController.animateToPage(index, duration: Duration(milliseconds: 500), curve: Curves.ease);
+      _pageController.animateToPage(index,
+          duration: Duration(milliseconds: 500), curve: Curves.ease);
     });
   }
 

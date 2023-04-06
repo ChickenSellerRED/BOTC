@@ -10,8 +10,10 @@ import "Pages/GamePage.dart";
 import "Pages/SwitchGameModePage.dart";
 import "common/Global.dart";
 import 'Pages/WaitInRoomPage.dart';
+import 'package:flutter/rendering.dart';
 
 void main(){
+  // debugPaintSizeEnabled = true;
   Global.init();
   runApp(const BOTC());
 }

@@ -14,6 +14,8 @@ class User{
   String get name => _name;
 
 
+  String get avatarUri => _avatarUri;
+
   String get uuid => _uuid;
 
   Map<String,dynamic> toHeader(){
@@ -30,7 +32,7 @@ class User{
     _uuid = json["uuid"];
 
   User.buildDefault():
-    _name = "     ",
+    _name = "",
     _avatarUri = "images/avatar.png",
     _uuid = "default uuid";
 
@@ -40,7 +42,12 @@ class User{
     _uuid = JSONData["uuid"];
   }
 
-  bool equals(User u){
-    return _uuid == u._uuid;
+  bool equals(User? u){
+    if(u==null) return false;
+    return _uuid == u!._uuid;
+  }
+
+  bool isDefault(){
+    return this.uuid == "default uuid";
   }
 }

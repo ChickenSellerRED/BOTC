@@ -48,12 +48,15 @@ class WaitInRoomPage extends StatefulWidget {
 class WaitInRoomPageState extends State<WaitInRoomPage> {
   late Room _room;
   late List<User> _users;
-
+  late List<User> _seats;
   @override
   void initState() {
     super.initState();
     _room = new Room.buildDefault();
     _users = <User>[];
+    _seats = List<User>.filled(widget._args.maxPeople, User.buildDefault());
+    _addAMember(User('李家豪',"images/avatar_0.png"));
+    _addAMember(User('刘林虎',"images/avatar_1.png"));
     Global.channel.sink.add(jsonEncode({
       "verb": widget.args.isCreateRoom ? "create_room" : "join_room",
       "body": widget.args.isCreateRoom
@@ -67,8 +70,14 @@ class WaitInRoomPageState extends State<WaitInRoomPage> {
     }));
   }
 
-  void addOneMemberList(dynamic member) {
-    setState(() => {_users.add(User.buildFromJSON(member))});
+  void _addAMember(User user){
+    _users.add(user);
+    for(int i=0;i<_seats.length;i++){
+      if(_seats[i].isDefault()){
+        _seats[i] = user;
+        return;
+      }
+    }
   }
 
   void _exitRoom() {
@@ -83,6 +92,7 @@ class WaitInRoomPageState extends State<WaitInRoomPage> {
   }
   Widget build(BuildContext context) {
     return Scaffold(
+        resizeToAvoidBottomInset: false,//解决弹出式键盘导致底部overflow的问题
         appBar: AppBar(),
         body: StreamBuilder(
           stream: Global.stream!,
@@ -107,12 +117,11 @@ class WaitInRoomPageState extends State<WaitInRoomPage> {
                 );
               }else if (jsonData["verb"] == "create_room_success") {
                 _room = Room.buildFromJSON(jsonData["room"]);
-                _users.add(_room!.homeOwner);
               } else if (jsonData["verb"] == "someone_join_room") {
                 _users.add(User.buildFromJSON(jsonData["user"]));
               } else if (jsonData["verb"] == "someone_exit_room") {
                 _users.removeWhere(
-                    (u) => u.equals(User.buildFromJSON(jsonData["user"])));
+                    (u) => u!.equals(User.buildFromJSON(jsonData["user"])));
               }
             }
             return Center(
@@ -125,21 +134,59 @@ class WaitInRoomPageState extends State<WaitInRoomPage> {
                       width: 50,
                       height: 50,
                     ),
-                    Text(Global.userProfile.name)
+                    Text(Global.userProfile.name),
+                    // Text(_seats[0].name)
                   ],
                 ),
                 SizedBox(
                     width: 300,
-                    height: 200,
-                    child: GridView.builder(
-                      scrollDirection: Axis.vertical,
-                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 2),
-                      itemCount: _users.length,
-                      itemBuilder: (context, index) {
-                        return UserCardWidget(_users[index]);
-                      },
-                    )),
-                Row(
+                    height: 500,
+                    child: Center(
+                      child:Row(
+                        children: List<DragTarget>.generate(3, (index) =>(
+                            DragTarget<User>(
+                              builder: (context,data,rejectedData){
+                            return LongPressDraggable(
+                                maxSimultaneousDrags: _seats[index].isDefault()?0:1,
+                                data: _seats[index],
+                                feedback: Opacity(opacity:.45,child:Material(child:UserCardWidget(_seats[index]))),
+                                child: UserCardWidget(_seats[index]),
+                            );
+                          },
+                          onWillAccept: (data){
+                            return true;
+                          },
+                          onAccept: (data){
+                            int target = -1;
+                            for(int i=0;i<_seats.length;i++){
+                              if(data.equals(_seats[i])){
+                                target = i;
+                                break;
+                              }
+                            }
+                            if(target != -1){
+                              //找到了
+                              print("index:"+index.toString());
+                              print("target:"+target.toString());
+                              setState(() {
+                                print(_seats[0].name);
+                                print(_seats[1].name);
+                                User tem = _seats[target];
+                                _seats[target] = _seats[index];
+                                _seats[index] = tem;
+                                print(_seats[0].name);
+                                print(_seats[1].name);
+                              });
+
+                            }else if(target == -1){
+                              //todo:处理seats找不到该user的情况（比如user恰好退出房间）
+                            }
+                          },)))
+
+                      )
+                    )
+                ),
+                Container(child:Row(
                   children: <Widget>[
                     _room.homeOwner.equals(Global.userProfile)?ElevatedButton(
                     onPressed: _startGame,
@@ -151,7 +198,7 @@ class WaitInRoomPageState extends State<WaitInRoomPage> {
                     ),
                     Text("Time to start: 05:00")
                   ],
-                )
+                ))
               ]),
             );
           },

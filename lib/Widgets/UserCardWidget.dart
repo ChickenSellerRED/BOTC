@@ -7,6 +7,8 @@ class UserCardWidget extends StatefulWidget{
   final User _user;
 
   const UserCardWidget(this._user, {super.key});
+  UserCardWidget.buildDefault():
+      _user = User.buildDefault();
 
   @override
   State<StatefulWidget> createState() => UserCardWidgetState();
@@ -17,31 +19,33 @@ class UserCardWidgetState extends State<UserCardWidget>{
   void _addAsFriend(){}
   @override
   Widget build(BuildContext context) {
-    return SizedBox.fromSize(
-      child: Row(
+    return
+    SizedBox(
+      width: 80,
+      height: 80,
+      child:Container(
+        decoration: BoxDecoration(
+            border: Border.all(color: Colors.blueAccent)
+        ),
+        child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          const Image(
-            image: AssetImage("images/avatar.png"),
-            width: 30,
-            height: 30,
-          ),
-          Text(widget._user.name),
-        Padding(
-          padding: EdgeInsets.fromLTRB(10, 0, 0, 0),
-          child:Container(
-            width: 20,
-            height: 20,
-              child:ElevatedButton(
-                child:Icon(Icons.person_add,size: 20,color: Colors.white,),
-                onPressed: (){},
-              )
-          )
-    )
-        ],
-      ),
+          children: [
+            SizedBox(
+              width: 50,
+              height: 50,
+              child:Image(
+                  image: !widget._user.isDefault()?AssetImage(widget._user.avatarUri):AssetImage("images/empty_seat.jpg"),
+                ),
+            ),
+
+            Text(widget._user!=null?widget._user.name:"",
+            ),
+          ],
+        ),
+      ) ,
     );
+
   }
   
 }
