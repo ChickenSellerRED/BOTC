@@ -4,6 +4,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:my_flutter_app/Models/Room.dart';
+import 'package:my_flutter_app/Pages/GamePage.dart';
 import 'package:my_flutter_app/Widgets/UserCardWidget.dart';
 import 'package:web_socket_channel/io.dart';
 import '../common/Global.dart';
@@ -54,9 +55,7 @@ class WaitInRoomPageState extends State<WaitInRoomPage> {
     super.initState();
     _room = new Room.buildDefault();
     _users = <User>[];
-    _seats = List<User>.filled(widget._args.maxPeople, User.buildDefault());
-    _addAMember(User('李家豪',"images/avatar_0.png"));
-    _addAMember(User('刘林虎',"images/avatar_1.png"));
+    _testInitUsers();
     Global.channel.sink.add(jsonEncode({
       "verb": widget.args.isCreateRoom ? "create_room" : "join_room",
       "body": widget.args.isCreateRoom
@@ -68,6 +67,19 @@ class WaitInRoomPageState extends State<WaitInRoomPage> {
               "room_number": widget.args.roomNumber,
             }
     }));
+  }
+
+  void _testInitUsers(){
+    _seats = List<User>.filled(9, User.buildDefault());
+    _addAMember(User('李家豪',"images/avatar_0.png"));
+    _addAMember(User('刘林虎',"images/avatar_1.png"));
+    _addAMember(User('李家豪',"images/avatar_0.png"));
+    _addAMember(User('刘林虎',"images/avatar_1.png"));
+    _addAMember(User('李家豪',"images/avatar_0.png"));
+    _addAMember(User('刘林虎',"images/avatar_1.png"));
+    _addAMember(User('李家豪',"images/avatar_0.png"));
+    _addAMember(User('刘林虎',"images/avatar_1.png"));
+    _addAMember(User('李家豪',"images/avatar_0.png"));
   }
 
   void _addAMember(User user){
@@ -87,8 +99,18 @@ class WaitInRoomPageState extends State<WaitInRoomPage> {
   }
   void _startGame(){
     Global.channel.sink.add(jsonEncode({
-      "verb":"start_game"
+      "verb":"start_game",
+      "body":{
+          "townsfolk":["占卜师","僧侣","圣女","士兵","厨师","掘墓人"],
+          "outsiders":["圣徒"],
+          "minions":["投毒者"],
+          "demons":["小恶魔"],
+      }
     }));
+    Navigator.of(context).pushNamed(
+        "GamePage",
+        arguments:GamePageArgument(_room, _seats)
+    );
   }
   Widget build(BuildContext context) {
     return Scaffold(
@@ -121,7 +143,10 @@ class WaitInRoomPageState extends State<WaitInRoomPage> {
                 _users.add(User.buildFromJSON(jsonData["user"]));
               } else if (jsonData["verb"] == "someone_exit_room") {
                 _users.removeWhere(
-                    (u) => u!.equals(User.buildFromJSON(jsonData["user"])));
+                    (u) => u.equals(User.buildFromJSON(jsonData["user"])));
+              }else if (jsonData["verb"] == "room_close") {
+                print("room closed, reason:"+jsonData["reason"]);
+                Navigator.of(context).pop();
               }
             }
             return Center(

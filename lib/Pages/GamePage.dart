@@ -9,13 +9,35 @@ import 'package:flutter_chat_ui/flutter_chat_ui.dart';
 import 'dart:convert';
 import 'dart:math';
 
-class GamePage extends StatefulWidget {
-  Room _room;
+import '../Models/User.dart';
+import '../common/Global.dart';
+import '../common/Tools.dart';
+import 'GamePage.dart';
 
-  GamePage(this._room);
+class GamePageArgument {
+  Room _room;
+  List<User> _seats;
+
+  Room get room => _room;
+
+  GamePageArgument(this._room, this._seats);
+
+  List<User> get seats => _seats;
+}
+
+class GamePage extends StatefulWidget {
+  GamePageArgument _args;
+
+  GamePage(this._args);
 
   @override
   State createState() => GamePageState();
+}
+enum Stage<String> {
+  freeTalking,
+  nominating,
+  voting,
+  night
 }
 
 class GamePageState extends State<GamePage> {
@@ -24,13 +46,37 @@ class GamePageState extends State<GamePage> {
     initialPage: 0,
   );
   int _selectedChatIndex = 0;
-  int bottomSelectedIndex = 0;
+  int _bottomSelectedIndex = 0;
+
+  int _days = 0;//游戏天数
+  Stage _state = Stage.night;//当前游戏的阶段
+  bool _isNightNow() => _state==Stage.night;//现在是否是晚上
+  User nominatingUser = User.buildDefault();//正在被提名的玩家
+  Map<User,int> _nominees = Map();//在处刑台上的所有玩家以及票数
+  User _executingUser = User.buildDefault();//将被处刑的玩家
+  List<String> _gameLog = List<String>.empty();//游戏日志
+
+  //说书人专用
+  late List<String> _characters; //根据座位排序的角色信息
 
   final List<types.Message> _messages = [];
   final _user = const types.User(
       id: '82091008-a484-4a89-ae75-a22bf8d6f3ac',
       firstName: "Jize",
       lastName: "Bi");
+
+
+  @override
+  void initState() {
+    if(Global.channel != null){
+      Global.stream.listen(
+              (event){
+                dynamic json = Tools.json2Map(event);
+            _characters = json["characterList"];
+          }
+      );
+    }
+  }
 
   List<BottomNavigationBarItem> buildBottomNavBarItems() {
     return [
@@ -138,7 +184,7 @@ class GamePageState extends State<GamePage> {
         ],
       ),
       bottomNavigationBar: BottomNavigationBar(
-        currentIndex: bottomSelectedIndex,
+        currentIndex: _bottomSelectedIndex,
         onTap: (index) {
           bottomTapped(index);
         },
@@ -149,7 +195,7 @@ class GamePageState extends State<GamePage> {
 
   void bottomTapped(int index) {
     setState(() {
-      bottomSelectedIndex = index;
+      _bottomSelectedIndex = index;
       _pageController.animateToPage(index,
           duration: Duration(milliseconds: 500), curve: Curves.ease);
     });
@@ -157,7 +203,7 @@ class GamePageState extends State<GamePage> {
 
   void pageChanged(int index) {
     setState(() {
-      bottomSelectedIndex = index;
+      _bottomSelectedIndex = index;
     });
   }
 

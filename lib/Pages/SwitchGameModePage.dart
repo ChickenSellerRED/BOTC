@@ -1,8 +1,10 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:my_flutter_app/Pages/GamePage.dart';
 import 'package:web_socket_channel/io.dart';
 
 import '../Models/Room.dart';
+import '../Models/User.dart';
 import '../common/Global.dart';
 
 class SwitchGameModePage extends StatefulWidget{
@@ -29,7 +31,7 @@ class SwitchGameModePageState extends State<SwitchGameModePage>{
   void startOnlineMode(){
     Navigator.of(context).pushNamed(
         "GamePage",
-        arguments:Room.buildDefault()
+        arguments:GamePageArgument(Room.buildDefault(),List<User>.generate(3, (index) => User.buildDefault()))
     );
   }
   @override

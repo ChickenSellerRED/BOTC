@@ -28,7 +28,6 @@ class CreateRoomPageState extends State<CreateRoomPage>{
       Global.stream = Global.channel.stream.asBroadcastStream();
       Global.stream.listen(
         (event){
-          print(event);
         }
       );
       var result = Navigator.of(context).pushNamed(
