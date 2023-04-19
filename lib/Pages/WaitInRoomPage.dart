@@ -50,6 +50,7 @@ class WaitInRoomPageState extends State<WaitInRoomPage> {
   late Room _room;
   late List<User> _users;
   late List<User> _seats;
+  late List<int> _seatNumber;
   @override
   void initState() {
     super.initState();
@@ -70,7 +71,13 @@ class WaitInRoomPageState extends State<WaitInRoomPage> {
   }
 
   void _testInitUsers(){
-    _seats = List<User>.filled(9, User.buildDefault());
+    _seats = List<User>.filled(15, User.buildDefault());
+    _addAMember(User('李家豪',"images/avatar_0.png"));
+    _addAMember(User('刘林虎',"images/avatar_1.png"));
+    _addAMember(User('李家豪',"images/avatar_0.png"));
+    _addAMember(User('刘林虎',"images/avatar_1.png"));
+    _addAMember(User('李家豪',"images/avatar_0.png"));
+    _addAMember(User('刘林虎',"images/avatar_1.png"));
     _addAMember(User('李家豪',"images/avatar_0.png"));
     _addAMember(User('刘林虎',"images/avatar_1.png"));
     _addAMember(User('李家豪',"images/avatar_0.png"));
@@ -111,6 +118,19 @@ class WaitInRoomPageState extends State<WaitInRoomPage> {
         "GamePage",
         arguments:GamePageArgument(_room, _seats)
     );
+  }
+  double getUserCardPosition(int index, bool isTop){
+    var left = [146,219,292,292,292,292,292,195,98,0,0,0,0,0,73];
+    var top = [0,0,0,77,154,231,308,308,308,308,231,154,77,0,0];
+    if(isTop){
+      return top[index]+0.0;
+    }else{
+      return left[index]+0.0;
+    }
+  }
+
+  void initSeatNumber(){
+    if(this._room.maxpeople == 1)this._seatNumber = [0];
   }
   Widget build(BuildContext context) {
     return Scaffold(
@@ -163,54 +183,65 @@ class WaitInRoomPageState extends State<WaitInRoomPage> {
                     // Text(_seats[0].name)
                   ],
                 ),
-                SizedBox(
-                    width: 300,
-                    height: 500,
-                    child: Center(
-                      child:Row(
-                        children: List<DragTarget>.generate(3, (index) =>(
-                            DragTarget<User>(
+                Container(
+                  padding: EdgeInsets.all(0),
+                    decoration: BoxDecoration(
+                      border: Border.all(color: Colors.blueAccent)
+                    ),
+                    child:SizedBox(
+                    width: 357,
+                    height: 373,
+                      child:Stack(
+                        alignment: Alignment.topLeft,
+                          children: List<Widget>.generate(15, (index) =>
+                          Positioned(
+                            left:getUserCardPosition(index,false),
+                            top:getUserCardPosition(index,true),
+                            child:DragTarget<User>(
                               builder: (context,data,rejectedData){
-                            return LongPressDraggable(
-                                maxSimultaneousDrags: _seats[index].isDefault()?0:1,
-                                data: _seats[index],
-                                feedback: Opacity(opacity:.45,child:Material(child:UserCardWidget(_seats[index]))),
-                                child: UserCardWidget(_seats[index]),
-                            );
-                          },
-                          onWillAccept: (data){
-                            return true;
-                          },
-                          onAccept: (data){
-                            int target = -1;
-                            for(int i=0;i<_seats.length;i++){
-                              if(data.equals(_seats[i])){
-                                target = i;
-                                break;
-                              }
-                            }
-                            if(target != -1){
-                              //找到了
-                              print("index:"+index.toString());
-                              print("target:"+target.toString());
-                              setState(() {
-                                print(_seats[0].name);
-                                print(_seats[1].name);
-                                User tem = _seats[target];
-                                _seats[target] = _seats[index];
-                                _seats[index] = tem;
-                                print(_seats[0].name);
-                                print(_seats[1].name);
-                              });
+                                return LongPressDraggable(
+                                  maxSimultaneousDrags: _seats[index].isDefault()?0:1,
+                                  data: _seats[index],
+                                  feedback: Opacity(opacity:.45,child:Material(child:UserCardWidget(_seats[index],index+1))),
+                                  child: UserCardWidget(_seats[index],index+1),
+                                );
+                              },
+                              onWillAccept: (data){
+                                return true;
+                              },
+                              onAccept: (data){
+                                int target = -1;
+                                for(int i=0;i<_seats.length;i++){
+                                  if(data.equals(_seats[i])){
+                                    target = i;
+                                    break;
+                                  }
+                                }
+                                if(target != -1){
+                                  //找到了
+                                  print("index:"+index.toString());
+                                  print("target:"+target.toString());
+                                  setState(() {
+                                    print(_seats[0].name);
+                                    print(_seats[1].name);
+                                    User tem = _seats[target];
+                                    _seats[target] = _seats[index];
+                                    _seats[index] = tem;
+                                    print(_seats[0].name);
+                                    print(_seats[1].name);
+                                  });
 
-                            }else if(target == -1){
-                              //todo:处理seats找不到该user的情况（比如user恰好退出房间）
-                            }
-                          },)))
+                                }else if(target == -1){
+                                  //todo:处理seats找不到该user的情况（比如user恰好退出房间）
+                                }
+                              },)
+                          )
 
                       )
-                    )
-                ),
+
+                      )
+
+                )),
                 Container(child:Row(
                   children: <Widget>[
                     _room.homeOwner.equals(Global.userProfile)?ElevatedButton(

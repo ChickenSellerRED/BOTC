@@ -72,7 +72,18 @@ class GamePageState extends State<GamePage> {
       Global.stream.listen(
               (event){
                 dynamic json = Tools.json2Map(event);
-            _characters = json["characterList"];
+                switch(json["verb"]){
+                  case "character_assign_result":
+                    _characters = json["characterList"];
+                    print(_characters);
+                    break;
+                  case "passive_information_need":
+                    print(json["body"]["seat_number"] + "号玩家（"+ json["body"]["character"]+")需要被动型信息");
+                    break;
+                  case "proactive_argument_need":
+                    print(json["body"]["seat_number"] + "号玩家（"+ json["body"]["character"]+")(你)需要被动型信息");
+                    break;
+                }
           }
       );
     }
