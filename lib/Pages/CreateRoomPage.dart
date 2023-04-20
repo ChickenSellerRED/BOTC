@@ -26,15 +26,15 @@ class CreateRoomPageState extends State<CreateRoomPage>{
       Global.channel = IOWebSocketChannel.connect('ws://10.0.2.2:3000',
           headers: Global.userProfile.toHeader());
       Global.stream = Global.channel.stream.asBroadcastStream();
-      Global.stream.listen(
-        (event){
-        }
-      );
-      var result = Navigator.of(context).pushNamed(
-          "WaitInRoomPage",
-          arguments: WaitInRoomPageArgs.fromCreate(_nameController.text, int.parse(_maxPeopleController.text))
-      );
-      print("路由返回值：$result");
+      final subscription = Global.stream.listen(null);
+      subscription.onData((event){
+        subscription.cancel();
+        var result = Navigator.of(context).pushNamed(
+            "WaitInRoomPage",
+            arguments: WaitInRoomPageArgs.fromCreate(_nameController.text, int.parse(_maxPeopleController.text))
+        );
+        print("路由返回值：$result");
+      });
     }
   }
 

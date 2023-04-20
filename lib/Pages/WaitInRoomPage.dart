@@ -6,25 +6,25 @@ import 'package:flutter/material.dart';
 import 'package:my_flutter_app/Models/Room.dart';
 import 'package:my_flutter_app/Pages/GamePage.dart';
 import 'package:my_flutter_app/Widgets/UserCardWidget.dart';
+import 'package:my_flutter_app/Widgets/UserLayoutWidget.dart';
 import 'package:web_socket_channel/io.dart';
 import '../common/Global.dart';
 import '../Models/User.dart';
 import 'dart:convert';
 import '../common/Global.dart';
+import '../common/Tools.dart';
 
 class WaitInRoomPageArgs {
   late String _name;
   late int _maxPeople;
   late int _roomNumber;
-  late bool _isCreateRoom;
+  bool _isCreateRoom;
 
-  WaitInRoomPageArgs.fromJoin(this._roomNumber) {
+  WaitInRoomPageArgs.fromJoin(this._roomNumber):
     _isCreateRoom = false;
-  }
 
-  WaitInRoomPageArgs.fromCreate(this._name, this._maxPeople) {
-    _isCreateRoom = true;
-  }
+  WaitInRoomPageArgs.fromCreate(this._name, this._maxPeople):_isCreateRoom = true;
+
 
   bool get isCreateRoom => _isCreateRoom;
 
@@ -51,12 +51,14 @@ class WaitInRoomPageState extends State<WaitInRoomPage> {
   late List<User> _users;
   late List<User> _seats;
   late List<int> _seatNumber;
+  final subscription = Global.stream.listen(null);
   @override
   void initState() {
     super.initState();
-    _room = new Room.buildDefault();
+    _initSubscription();
+    print(widget._args.name);
+    _room = Room.buildDefault();
     _users = <User>[];
-    _testInitUsers();
     Global.channel.sink.add(jsonEncode({
       "verb": widget.args.isCreateRoom ? "create_room" : "join_room",
       "body": widget.args.isCreateRoom
@@ -69,9 +71,89 @@ class WaitInRoomPageState extends State<WaitInRoomPage> {
             }
     }));
   }
+  void _initSubscription(){
+    subscription.onData((event){
+      dynamic json = Tools.json2Map(event);
+      print(event);
+      // print(Global.channel.closeCode);
+      // print(Global.channel.closeReason);
+      if (Global.channel.closeCode != null) {
+        print("Server Close Code:" + Global.channel.closeCode.toString());
+        if(Global.channel.closeReason != null)
+          print("Close Reason:" + Global.channel.closeReason);
+        Navigator.of(context).pop();
+        return const Text("Connection Closed!");
+      } else if (event == "connect success") {
+        print("connect success");
+      } else {
+        if (json["verb"] == "game_started"){
+          Navigator.of(context).pushNamed(
+              "GamePage",
+              arguments:_room
+          );
+        }else if (json["verb"] == "create_room_success") {
+          setState((){
+            _room = Room.buildFromJSON(json["room"]);
+            _testInitUsers();
+            _initSeatNumber();
+          });
+        } else if (json["verb"] == "someone_join_room") {
+          _users.add(User.buildFromJSON(json["user"]));
+        } else if (json["verb"] == "someone_exit_room") {
+          _users.removeWhere(
+                  (u) => u.equals(User.buildFromJSON(json["user"])));
+        }else if (json["verb"] == "room_close") {
+          print("room closed, reason:"+json["reason"]);
+          Navigator.of(context).pop();
+        }
+      }
+    });
+  }
+  void _initSeatNumber(){
+    print("_initSeatNumber");
+    switch(this._room.maxpeople){
+      case 5:
+        _seatNumber = [0,4,7,8,11];
+        break;
+      case 6:
+        _seatNumber = [1,4,7,8,11,14];
+        break;
+      case 7:
+        _seatNumber = [0,1,4,7,8,11,14];
+        break;
+      case 8:
+        _seatNumber = [0,1,3,4,7,8,11,14];
+        break;
+      case 9:
+        _seatNumber =  [0,1,3,4,7,8,11,12,14];
+        break;
+      case 10:
+        _seatNumber = [0,1,3,4,5,7,8,11,12,14];
+        break;
+      case 11:
+        _seatNumber = [0,1,3,4,5,7,8,10,11,12,14];
+        break;
+      case 12:
+        _seatNumber = [0,1,3,4,5,6,7,8,10,11,12,14];
+        break;
+      case 13:
+        _seatNumber = [0,1,3,4,5,6,7,8,9,10,11,12,14];
+        break;
+      case 14:
+        _seatNumber = [0,1,2,3,4,5,6,7,8,9,10,11,12,14];
+        break;
+      case 15:
+        _seatNumber = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14];
+        break;
+      default:
+        break;
 
+    }
+
+  }
   void _testInitUsers(){
     _seats = List<User>.filled(15, User.buildDefault());
+    print("_testInitUsers");
     _addAMember(User('李家豪',"images/avatar_0.png"));
     _addAMember(User('刘林虎',"images/avatar_1.png"));
     _addAMember(User('李家豪',"images/avatar_0.png"));
@@ -119,57 +201,19 @@ class WaitInRoomPageState extends State<WaitInRoomPage> {
         arguments:GamePageArgument(_room, _seats)
     );
   }
-  double getUserCardPosition(int index, bool isTop){
-    var left = [146,219,292,292,292,292,292,195,98,0,0,0,0,0,73];
-    var top = [0,0,0,77,154,231,308,308,308,308,231,154,77,0,0];
-    if(isTop){
-      return top[index]+0.0;
-    }else{
-      return left[index]+0.0;
-    }
-  }
 
-  void initSeatNumber(){
-    if(this._room.maxpeople == 1)this._seatNumber = [0];
+  void _switchSeats(int target,int index){
+    setState(() {
+      User tem = _seats[target];
+      _seats[target] = _seats[index];
+      _seats[index] = tem;
+    });
   }
   Widget build(BuildContext context) {
     return Scaffold(
         resizeToAvoidBottomInset: false,//解决弹出式键盘导致底部overflow的问题
         appBar: AppBar(),
-        body: StreamBuilder(
-          stream: Global.stream!,
-          builder: (context, snapshot) {
-            print(snapshot.connectionState);
-            print(Global.channel.closeCode);
-            print(Global.channel.closeReason);
-            if (Global.channel.closeCode != null) {
-              print("Server Close Code:" + Global.channel.closeCode.toString());
-              if(Global.channel.closeReason != null)
-                print("Close Reason:" + Global.channel.closeReason);
-              Navigator.of(context).pop();
-              return const Text("Connection Closed!");
-            } else if (snapshot.hasData && snapshot.data == "connect success") {
-              print("connect success");
-            } else if (snapshot.hasData) {
-              dynamic jsonData = jsonDecode(snapshot.data as String);
-              if (jsonData["verb"] == "game_started"){
-                Navigator.of(context).pushNamed(
-                    "GamePage",
-                    arguments:_room
-                );
-              }else if (jsonData["verb"] == "create_room_success") {
-                _room = Room.buildFromJSON(jsonData["room"]);
-              } else if (jsonData["verb"] == "someone_join_room") {
-                _users.add(User.buildFromJSON(jsonData["user"]));
-              } else if (jsonData["verb"] == "someone_exit_room") {
-                _users.removeWhere(
-                    (u) => u.equals(User.buildFromJSON(jsonData["user"])));
-              }else if (jsonData["verb"] == "room_close") {
-                print("room closed, reason:"+jsonData["reason"]);
-                Navigator.of(context).pop();
-              }
-            }
-            return Center(
+        body: _room.roomNumber!=-1?Center(
               child: Column(children: <Widget>[
                 Text("Room:${_room?.name}\tHomeOwner:${_room?.homeOwner.name}\tRoomNumber:${_room?.roomNumber}"),
                 Row(
@@ -183,65 +227,7 @@ class WaitInRoomPageState extends State<WaitInRoomPage> {
                     // Text(_seats[0].name)
                   ],
                 ),
-                Container(
-                  padding: EdgeInsets.all(0),
-                    decoration: BoxDecoration(
-                      border: Border.all(color: Colors.blueAccent)
-                    ),
-                    child:SizedBox(
-                    width: 357,
-                    height: 373,
-                      child:Stack(
-                        alignment: Alignment.topLeft,
-                          children: List<Widget>.generate(15, (index) =>
-                          Positioned(
-                            left:getUserCardPosition(index,false),
-                            top:getUserCardPosition(index,true),
-                            child:DragTarget<User>(
-                              builder: (context,data,rejectedData){
-                                return LongPressDraggable(
-                                  maxSimultaneousDrags: _seats[index].isDefault()?0:1,
-                                  data: _seats[index],
-                                  feedback: Opacity(opacity:.45,child:Material(child:UserCardWidget(_seats[index],index+1))),
-                                  child: UserCardWidget(_seats[index],index+1),
-                                );
-                              },
-                              onWillAccept: (data){
-                                return true;
-                              },
-                              onAccept: (data){
-                                int target = -1;
-                                for(int i=0;i<_seats.length;i++){
-                                  if(data.equals(_seats[i])){
-                                    target = i;
-                                    break;
-                                  }
-                                }
-                                if(target != -1){
-                                  //找到了
-                                  print("index:"+index.toString());
-                                  print("target:"+target.toString());
-                                  setState(() {
-                                    print(_seats[0].name);
-                                    print(_seats[1].name);
-                                    User tem = _seats[target];
-                                    _seats[target] = _seats[index];
-                                    _seats[index] = tem;
-                                    print(_seats[0].name);
-                                    print(_seats[1].name);
-                                  });
-
-                                }else if(target == -1){
-                                  //todo:处理seats找不到该user的情况（比如user恰好退出房间）
-                                }
-                              },)
-                          )
-
-                      )
-
-                      )
-
-                )),
+                UserLayoutWidget(_seats, _seatNumber, _switchSeats),
                 Container(child:Row(
                   children: <Widget>[
                     _room.homeOwner.equals(Global.userProfile)?ElevatedButton(
@@ -256,8 +242,9 @@ class WaitInRoomPageState extends State<WaitInRoomPage> {
                   ],
                 ))
               ]),
-            );
-          },
-        ));
+            ):Container(child: Text("void"),)
+          ,
+
+    );
   }
 }

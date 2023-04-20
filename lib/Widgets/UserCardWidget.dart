@@ -43,7 +43,7 @@ class UserCardWidgetState extends State<UserCardWidget>{
             ),
 
             AutoSizeText(
-              this.widget._seatNumber.toString() + " " + ((widget._user!=null)?widget._user.name:""),
+              (widget._seatNumber!=-1?widget._seatNumber.toString():"") + " " + ((widget._user!=null)?widget._user.name:""),
               style: TextStyle(fontSize: 2),
               overflow: TextOverflow.ellipsis,
             ),
