@@ -34,6 +34,7 @@ class UserLayoutWidgetState extends State<UserLayoutWidget>{
   }
   @override
   Widget build(BuildContext context) {
+    print(_seatNumber);
     return Container(
         padding: EdgeInsets.all(0),
         decoration: BoxDecoration(
@@ -44,17 +45,18 @@ class UserLayoutWidgetState extends State<UserLayoutWidget>{
             height: 373,
             child:Stack(
                 alignment: Alignment.topLeft,
-                children: List<Widget>.generate(15, (index) =>
-                _seatNumber.contains(index)?Positioned(
-                    left:_getUserCardPosition(index,false),
-                    top:_getUserCardPosition(index,true),
+                children: List<Widget>.generate(_seats.length, (index){
+                  int layoutIndex = _seatNumber[index];
+                return Positioned(
+                    left:_getUserCardPosition(layoutIndex,false),
+                    top:_getUserCardPosition(layoutIndex,true),
                     child:DragTarget<User>(
                       builder: (context,data,rejectedData){
                         return LongPressDraggable(
                           maxSimultaneousDrags: _seats[index].isDefault()?0:1,
                           data: _seats[index],
                           feedback: Opacity(opacity:.45,child:Material(child:UserCardWidget(_seats[index],-1))),
-                          child: UserCardWidget(_seats[index],_seatNumber.indexOf(index)+1),
+                          child: UserCardWidget(_seats[index],index+1),
                         );
                       },
                       onWillAccept: (data){
@@ -68,19 +70,14 @@ class UserLayoutWidgetState extends State<UserLayoutWidget>{
                             break;
                           }
                         }
-                        if(target != -1){
+                        if(target != -1 && target != index){
                           //找到了
-                          print("index:"+index.toString());
-                          print("target:"+target.toString());
-                          print(_seats[index].name);
-                          print(_seats[target].name);
                           _onSeatsSwitch(target,index);
-
                         }else if(target == -1){
                           //todo:处理seats找不到该user的情况（比如user恰好退出房间）
                         }
                       },)
-                ):Container()
+                );}
 
                 )
 

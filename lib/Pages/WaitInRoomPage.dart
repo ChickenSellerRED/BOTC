@@ -52,6 +52,10 @@ class WaitInRoomPageState extends State<WaitInRoomPage> {
   late List<User> _seats;
   late List<int> _seatNumber;
   final subscription = Global.stream.listen(null);
+
+  void _send(dynamic data){
+    Global.channel.sink.add(jsonEncode(data));
+  }
   @override
   void initState() {
     super.initState();
@@ -59,7 +63,7 @@ class WaitInRoomPageState extends State<WaitInRoomPage> {
     print(widget._args.name);
     _room = Room.buildDefault();
     _users = <User>[];
-    Global.channel.sink.add(jsonEncode({
+    _send({
       "verb": widget.args.isCreateRoom ? "create_room" : "join_room",
       "body": widget.args.isCreateRoom
           ? {
@@ -69,12 +73,13 @@ class WaitInRoomPageState extends State<WaitInRoomPage> {
           : {
               "room_number": widget.args.roomNumber,
             }
-    }));
+    });
   }
   void _initSubscription(){
     subscription.onData((event){
       dynamic json = Tools.json2Map(event);
-      print(event);
+      dynamic jsonBody = (json as Map<String, dynamic>).containsKey("body")?json["body"]:{};
+      // print(event);
       // print(Global.channel.closeCode);
       // print(Global.channel.closeReason);
       if (Global.channel.closeCode != null) {
@@ -86,19 +91,23 @@ class WaitInRoomPageState extends State<WaitInRoomPage> {
       } else if (event == "connect success") {
         print("connect success");
       } else {
-        if (json["verb"] == "game_started"){
+        if (json["verb"] == "game_can_start"){
           Navigator.of(context).pushNamed(
               "GamePage",
-              arguments:_room
+              arguments:GamePageArgument(_room, _seats)
           );
         }else if (json["verb"] == "create_room_success") {
           setState((){
             _room = Room.buildFromJSON(json["room"]);
-            _testInitUsers();
             _initSeatNumber();
+            _testInitUsers();
           });
-        } else if (json["verb"] == "someone_join_room") {
-          _users.add(User.buildFromJSON(json["user"]));
+        } else if (json["verb"] == "someone_joined") {
+          User newUser = User.buildFromJSON(jsonBody["user"]);
+          setState(() {
+            _users.add(newUser);
+            _seats[jsonBody["seat_number"]] = newUser;
+          });
         } else if (json["verb"] == "someone_exit_room") {
           _users.removeWhere(
                   (u) => u.equals(User.buildFromJSON(json["user"])));
@@ -152,23 +161,22 @@ class WaitInRoomPageState extends State<WaitInRoomPage> {
 
   }
   void _testInitUsers(){
-    _seats = List<User>.filled(15, User.buildDefault());
-    print("_testInitUsers");
-    _addAMember(User('李家豪',"images/avatar_0.png"));
-    _addAMember(User('刘林虎',"images/avatar_1.png"));
-    _addAMember(User('李家豪',"images/avatar_0.png"));
-    _addAMember(User('刘林虎',"images/avatar_1.png"));
-    _addAMember(User('李家豪',"images/avatar_0.png"));
-    _addAMember(User('刘林虎',"images/avatar_1.png"));
-    _addAMember(User('李家豪',"images/avatar_0.png"));
-    _addAMember(User('刘林虎',"images/avatar_1.png"));
-    _addAMember(User('李家豪',"images/avatar_0.png"));
-    _addAMember(User('刘林虎',"images/avatar_1.png"));
-    _addAMember(User('李家豪',"images/avatar_0.png"));
-    _addAMember(User('刘林虎',"images/avatar_1.png"));
-    _addAMember(User('李家豪',"images/avatar_0.png"));
-    _addAMember(User('刘林虎',"images/avatar_1.png"));
-    _addAMember(User('李家豪',"images/avatar_0.png"));
+    _seats = List<User>.filled(this._room.maxpeople, User.buildDefault());
+    // _addAMember(User('李家豪',"images/avatar_0.png"));
+    // _addAMember(User('刘林虎',"images/avatar_1.png"));
+    // _addAMember(User('李家豪',"images/avatar_0.png"));
+    // _addAMember(User('刘林虎',"images/avatar_1.png"));
+    // _addAMember(User('李家豪',"images/avatar_0.png"));
+    // _addAMember(User('刘林虎',"images/avatar_1.png"));
+    // _addAMember(User('李家豪',"images/avatar_0.png"));
+    // _addAMember(User('刘林虎',"images/avatar_1.png"));
+    // _addAMember(User('李家豪',"images/avatar_0.png"));
+    // _addAMember(User('刘林虎',"images/avatar_1.png"));
+    // _addAMember(User('李家豪',"images/avatar_0.png"));
+    // _addAMember(User('刘林虎',"images/avatar_1.png"));
+    // _addAMember(User('李家豪',"images/avatar_0.png"));
+    // _addAMember(User('刘林虎',"images/avatar_1.png"));
+    // _addAMember(User('李家豪',"images/avatar_0.png"));
   }
 
   void _addAMember(User user){
@@ -187,22 +195,21 @@ class WaitInRoomPageState extends State<WaitInRoomPage> {
     Navigator.of(context).pop();
   }
   void _startGame(){
-    Global.channel.sink.add(jsonEncode({
-      "verb":"start_game",
-      "body":{
-          "townsfolk":["占卜师","僧侣","圣女","士兵","厨师","掘墓人"],
-          "outsiders":["圣徒"],
-          "minions":["投毒者"],
-          "demons":["小恶魔"],
-      }
-    }));
-    Navigator.of(context).pushNamed(
-        "GamePage",
-        arguments:GamePageArgument(_room, _seats)
-    );
+    _send({
+      "verb":"check_start_game",
+
+    });
   }
 
   void _switchSeats(int target,int index){
+    _send({
+      "verb":"switch_seats",
+      "body":{
+        "seatA":target,
+        "seatB":index
+      }
+    });
+    print("sent!");
     setState(() {
       User tem = _seats[target];
       _seats[target] = _seats[index];

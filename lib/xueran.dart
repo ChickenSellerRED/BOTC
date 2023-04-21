@@ -45,6 +45,7 @@ class BOTC extends StatelessWidget{
               },
             );
           }else if(settings.name == "GamePage"){
+            print(settings.arguments);
             return MaterialPageRoute(
               builder: (context) {
                 return GamePage(settings.arguments as GamePageArgument);

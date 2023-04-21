@@ -48,6 +48,11 @@ class GamePageState extends State<GamePage> {
   int _selectedChatIndex = 0;
   int _bottomSelectedIndex = 0;
 
+
+  late Room _room;
+  late List<User> _seats;
+  late bool _ishomeOwner;
+
   int _days = 0;//游戏天数
   Stage _state = Stage.night;//当前游戏的阶段
   bool _isNightNow() => _state==Stage.night;//现在是否是晚上
@@ -66,15 +71,39 @@ class GamePageState extends State<GamePage> {
       lastName: "Bi");
 
 
+  void _send(dynamic data){
+    Global.channel.sink.add(jsonEncode(data));
+  }
+
   @override
   void initState() {
+    _room = widget._args._room;
+    _seats = widget._args._seats;
+    if(Global.userProfile.equals(_room.homeOwner)){
+      print("你是房主");
+      _ishomeOwner = true;
+      _send({
+        "verb":"start_game",
+        "body":{
+          "townsfolk":["占卜师","僧侣","圣女"],
+          "outsiders":[],
+          "minions":["投毒者"],
+          "demons":["小恶魔"],
+          "bluff":["市长","士兵","图书管理员"],
+          "foe":1,
+          "drunkFakeCharacter":"无",
+          "spyFakeCharacter":"无",
+          "recluseFakeCharacter":"无",
+        }
+      });
+    }
     if(Global.channel != null){
       Global.stream.listen(
               (event){
                 dynamic json = Tools.json2Map(event);
                 switch(json["verb"]){
                   case "character_assign_result":
-                    _characters = json["characterList"];
+                    _characters = json["body"]["characterList"];
                     print(_characters);
                     break;
                   case "passive_information_need":
