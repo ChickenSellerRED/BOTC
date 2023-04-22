@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:collection';
 import 'dart:io';
 
 import 'package:flutter/cupertino.dart';
@@ -11,6 +12,7 @@ import 'dart:math';
 
 import '../Models/User.dart';
 import '../common/Global.dart';
+import '../common/ServerMessage.dart';
 import '../common/Tools.dart';
 import 'GamePage.dart';
 
@@ -60,6 +62,8 @@ class GamePageState extends State<GamePage> {
   Map<User,int> _nominees = Map();//在处刑台上的所有玩家以及票数
   User _executingUser = User.buildDefault();//将被处刑的玩家
   List<String> _gameLog = List<String>.empty();//游戏日志
+  Queue<ServerMessage> _sMessages = new Queue<ServerMessage>();
+
 
   //说书人专用
   late List<String> _characters; //根据座位排序的角色信息
@@ -96,22 +100,26 @@ class GamePageState extends State<GamePage> {
           "recluseFakeCharacter":"无",
         }
       });
+    }else{
+      print("你不是房主");
+      _ishomeOwner = false;
     }
     if(Global.channel != null){
       Global.stream.listen(
               (event){
                 dynamic json = Tools.json2Map(event);
-                switch(json["verb"]){
-                  case "character_assign_result":
-                    _characters = json["body"]["characterList"];
-                    print(_characters);
-                    break;
-                  case "passive_information_need":
-                    print(json["body"]["seat_number"] + "号玩家（"+ json["body"]["character"]+")需要被动型信息");
-                    break;
-                  case "proactive_argument_need":
-                    print(json["body"]["seat_number"] + "号玩家（"+ json["body"]["character"]+")(你)需要被动型信息");
-                    break;
+                dynamic jsonVerb = json["verb"];
+                dynamic jsonBody = (json as Map<String, dynamic>).containsKey("body")?json["body"]:{};
+                if(jsonVerb.endsWith("_need") || jsonVerb.endsWith("_give")){
+                  _sMessages.add(new ServerMessage(json["verb"],jsonBody));
+                }
+                else {
+                  switch(json["verb"]){
+                    case "character_assign_result":
+                      _characters = List<String>.from(jsonBody["characterList"]);
+                      break;
+
+                  }
                 }
           }
       );
@@ -158,6 +166,11 @@ class GamePageState extends State<GamePage> {
     setState(() {
       _messages.insert(0, message);
     });
+  }
+
+  void _checkServerMessage(){
+    ServerMessage sm = _sMessages.first;
+    
   }
 
   @override
