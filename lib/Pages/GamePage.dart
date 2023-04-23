@@ -7,9 +7,12 @@ import 'package:flutter/material.dart';
 import 'package:my_flutter_app/Models/Room.dart';
 import 'package:flutter_chat_types/flutter_chat_types.dart' as types;
 import 'package:flutter_chat_ui/flutter_chat_ui.dart';
+import 'package:my_flutter_app/Widgets/Dialog/ServerMessageDialog.dart';
 import 'dart:convert';
 import 'dart:math';
 
+import '../Models/Game.dart';
+import '../Models/GameSetting.dart';
 import '../Models/User.dart';
 import '../common/Global.dart';
 import '../common/ServerMessage.dart';
@@ -18,13 +21,14 @@ import 'GamePage.dart';
 
 class GamePageArgument {
   Room _room;
-  List<User> _seats;
+  Game _game;
+  GameSetting _gameSetting;
 
   Room get room => _room;
 
-  GamePageArgument(this._room, this._seats);
+  GamePageArgument(this._room, this._game):
+    this._gameSetting = GameSetting.buildDefault();
 
-  List<User> get seats => _seats;
 }
 
 class GamePage extends StatefulWidget {
@@ -52,21 +56,11 @@ class GamePageState extends State<GamePage> {
 
 
   late Room _room;
-  late List<User> _seats;
-  late bool _ishomeOwner;
-
-  int _days = 0;//游戏天数
-  Stage _state = Stage.night;//当前游戏的阶段
-  bool _isNightNow() => _state==Stage.night;//现在是否是晚上
-  User nominatingUser = User.buildDefault();//正在被提名的玩家
-  Map<User,int> _nominees = Map();//在处刑台上的所有玩家以及票数
-  User _executingUser = User.buildDefault();//将被处刑的玩家
-  List<String> _gameLog = List<String>.empty();//游戏日志
-  Queue<ServerMessage> _sMessages = new Queue<ServerMessage>();
+  late Game _game;
 
 
-  //说书人专用
-  late List<String> _characters; //根据座位排序的角色信息
+
+
 
   final List<types.Message> _messages = [];
   final _user = const types.User(
@@ -82,27 +76,19 @@ class GamePageState extends State<GamePage> {
   @override
   void initState() {
     _room = widget._args._room;
-    _seats = widget._args._seats;
+    _game = widget._args._game;
+    _game.config(widget._args._gameSetting);
+
     if(Global.userProfile.equals(_room.homeOwner)){
       print("你是房主");
-      _ishomeOwner = true;
+      _game.ishomeOwner = true;
       _send({
         "verb":"start_game",
-        "body":{
-          "townsfolk":["占卜师","僧侣","圣女"],
-          "outsiders":[],
-          "minions":["投毒者"],
-          "demons":["小恶魔"],
-          "bluff":["市长","士兵","图书管理员"],
-          "foe":1,
-          "drunkFakeCharacter":"无",
-          "spyFakeCharacter":"无",
-          "recluseFakeCharacter":"无",
-        }
+        "body":_game.gameSetting.toJSON()
       });
     }else{
       print("你不是房主");
-      _ishomeOwner = false;
+      _game.ishomeOwner = false;
     }
     if(Global.channel != null){
       Global.stream.listen(
@@ -111,20 +97,22 @@ class GamePageState extends State<GamePage> {
                 dynamic jsonVerb = json["verb"];
                 dynamic jsonBody = (json as Map<String, dynamic>).containsKey("body")?json["body"]:{};
                 if(jsonVerb.endsWith("_need") || jsonVerb.endsWith("_give")){
-                  _sMessages.add(new ServerMessage(json["verb"],jsonBody));
+                  _game.sMessages.add(new ServerMessage(json["verb"],jsonBody));
                 }
                 else {
                   switch(json["verb"]){
                     case "character_assign_result":
-                      _characters = List<String>.from(jsonBody["characterList"]);
+                      _game.characters = List<String>.from(jsonBody["characterList"]);
+                      _game.assignCharacters();
                       break;
-
                   }
                 }
           }
       );
     }
   }
+
+
 
   List<BottomNavigationBarItem> buildBottomNavBarItems() {
     return [
@@ -169,7 +157,7 @@ class GamePageState extends State<GamePage> {
   }
 
   void _checkServerMessage(){
-    ServerMessage sm = _sMessages.first;
+    ServerMessage sm = _game.sMessages.first;
     
   }
 
@@ -185,7 +173,14 @@ class GamePageState extends State<GamePage> {
         },
         children: [
           Center(
-            child: Text("Seat"),
+            child: ElevatedButton(
+          onPressed: (){
+            showDialog(context: context,builder: (BuildContext context){
+              return ServerMessageDialog(ServerMessage("passive_information_need", {}),_game);
+              // return AlertDialog();
+            });
+            }, child: Text("open dialog"),
+      )
           ),
           Row(
             children: <Widget>[

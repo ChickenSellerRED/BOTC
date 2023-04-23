@@ -7,6 +7,9 @@ class User{
   String _avatarUri;
   String? _friendCode;
   String _uuid;
+  late bool isAlive;
+  late String character;
+  late String fakeCharacter;
 
   User(this._name, this._avatarUri):
     _uuid = new Uuid().v4();

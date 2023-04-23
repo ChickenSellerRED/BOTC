@@ -29,10 +29,6 @@ class SwitchGameModePageState extends State<SwitchGameModePage>{
     Global.isOnline = false;
   }
   void startOnlineMode(){
-    Navigator.of(context).pushNamed(
-        "GamePage",
-        arguments:GamePageArgument(Room.buildDefault(),List<User>.generate(3, (index) => User.buildDefault()))
-    );
   }
   @override
   Widget build(BuildContext context) {

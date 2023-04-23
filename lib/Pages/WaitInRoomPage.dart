@@ -8,6 +8,7 @@ import 'package:my_flutter_app/Pages/GamePage.dart';
 import 'package:my_flutter_app/Widgets/UserCardWidget.dart';
 import 'package:my_flutter_app/Widgets/UserLayoutWidget.dart';
 import 'package:web_socket_channel/io.dart';
+import '../Models/Game.dart';
 import '../common/Global.dart';
 import '../Models/User.dart';
 import 'dart:convert';
@@ -50,7 +51,7 @@ class WaitInRoomPageState extends State<WaitInRoomPage> {
   late Room _room;
   late List<User> _users;
   late List<User> _seats;
-  late List<int> _seatNumber;
+  late Game _game;
   final subscription = Global.stream.listen(null);
 
   void _send(dynamic data){
@@ -62,6 +63,8 @@ class WaitInRoomPageState extends State<WaitInRoomPage> {
     _initSubscription();
     print(widget._args.name);
     _room = Room.buildDefault();
+    _game = Game.createNew();
+    _game.maxPeople = widget._args.maxPeople;
     _users = <User>[];
     _send({
       "verb": widget.args.isCreateRoom ? "create_room" : "join_room",
@@ -94,13 +97,13 @@ class WaitInRoomPageState extends State<WaitInRoomPage> {
         if (json["verb"] == "game_can_start"){
           Navigator.of(context).pushNamed(
               "GamePage",
-              arguments:GamePageArgument(_room, _seats)
+              arguments:GamePageArgument(_room, _game)
           );
         }else if (json["verb"] == "create_room_success") {
           setState((){
             _room = Room.buildFromJSON(json["room"]);
-            _initSeatNumber();
             _testInitUsers();
+            _game.seats = _seats;
           });
         } else if (json["verb"] == "someone_joined") {
           User newUser = User.buildFromJSON(jsonBody["user"]);
@@ -118,48 +121,7 @@ class WaitInRoomPageState extends State<WaitInRoomPage> {
       }
     });
   }
-  void _initSeatNumber(){
-    print("_initSeatNumber");
-    switch(this._room.maxpeople){
-      case 5:
-        _seatNumber = [0,4,7,8,11];
-        break;
-      case 6:
-        _seatNumber = [1,4,7,8,11,14];
-        break;
-      case 7:
-        _seatNumber = [0,1,4,7,8,11,14];
-        break;
-      case 8:
-        _seatNumber = [0,1,3,4,7,8,11,14];
-        break;
-      case 9:
-        _seatNumber =  [0,1,3,4,7,8,11,12,14];
-        break;
-      case 10:
-        _seatNumber = [0,1,3,4,5,7,8,11,12,14];
-        break;
-      case 11:
-        _seatNumber = [0,1,3,4,5,7,8,10,11,12,14];
-        break;
-      case 12:
-        _seatNumber = [0,1,3,4,5,6,7,8,10,11,12,14];
-        break;
-      case 13:
-        _seatNumber = [0,1,3,4,5,6,7,8,9,10,11,12,14];
-        break;
-      case 14:
-        _seatNumber = [0,1,2,3,4,5,6,7,8,9,10,11,12,14];
-        break;
-      case 15:
-        _seatNumber = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14];
-        break;
-      default:
-        break;
 
-    }
-
-  }
   void _testInitUsers(){
     _seats = List<User>.filled(this._room.maxpeople, User.buildDefault());
     // _addAMember(User('李家豪',"images/avatar_0.png"));
@@ -197,7 +159,6 @@ class WaitInRoomPageState extends State<WaitInRoomPage> {
   void _startGame(){
     _send({
       "verb":"check_start_game",
-
     });
   }
 
@@ -234,7 +195,7 @@ class WaitInRoomPageState extends State<WaitInRoomPage> {
                     // Text(_seats[0].name)
                   ],
                 ),
-                UserLayoutWidget(_seats, _seatNumber, _switchSeats),
+                UserLayoutWidget(_game,onSeatsSwitch:_switchSeats,isWaitting: true,),
                 Container(child:Row(
                   children: <Widget>[
                     _room.homeOwner.equals(Global.userProfile)?ElevatedButton(
