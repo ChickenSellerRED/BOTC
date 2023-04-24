@@ -35,7 +35,6 @@ dependencies:
   web_socket_channel: ^2.3.0
   flutter_chat_ui: ^1.6.6
   auto_size_text: ^3.0.0
-  flutter_toggle_buttons: ^3.0.1
 
 
   # The following adds the Cupertino Icons font to your application.
