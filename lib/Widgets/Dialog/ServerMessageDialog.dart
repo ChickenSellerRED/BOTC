@@ -50,9 +50,13 @@ class ServerMessageDialogState extends State<ServerMessageDialog>{
     _selectedUser = -1;
     _selectCharacter = "无";
     _inputNumber = 0;
+    _selectedBool = false;
     _initHint();
   }
   void _initHint(){
+    print(_game.ishomeOwner);
+    print(_sm.verb);
+    print(_sm.body);
     if(_game.ishomeOwner){//是房主
       switch(_sm.verb){
         case "passive_information_need": //说书人提供被动信息
@@ -323,7 +327,7 @@ class ServerMessageDialogState extends State<ServerMessageDialog>{
           break;
         }
     }
-    Navigator.of(context).pop();
+    Navigator.of(context).pop("yes");
   }
 
   void _dealImpKill(){
@@ -380,17 +384,19 @@ class ServerMessageDialogState extends State<ServerMessageDialog>{
 
               },)
             ),
+            Text(_hint),
             Column(
               children: List<ChoiceChip>.generate(_choosingUsers.length, (index){
                 int userNumber = _choosingUsers[index];
                 return ChoiceChip(
-                  label: Text("玩家 $userNumber ${_game.ishomeOwner?("(${this._game.seats[userNumber].character})"):""}${_game.seats[userNumber].name}"),
+                  label: Text("玩家${(userNumber+1).toString()}${_game.ishomeOwner?("(${this._game.seats[userNumber].character})"):""}${_game.seats[userNumber].name}"),
                   selected: _selectedUser==userNumber,
                   onSelected: (isSelected) {
-                    if(isSelected)
+                    if(isSelected){
                       setState(() {
-                        _selectedUser = userNumber;
+                        selectedUser = userNumber;
                       });
+                    }
                   },
                 );
               })

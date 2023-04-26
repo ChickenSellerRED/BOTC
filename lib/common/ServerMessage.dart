@@ -3,4 +3,9 @@ class ServerMessage{
   late dynamic body;
 
   ServerMessage(this.verb, this.body);
+
+  log(){
+    print(this.verb);
+    print(this.body);
+  }
 }

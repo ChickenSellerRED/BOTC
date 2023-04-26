@@ -80,7 +80,6 @@ class GamePageState extends State<GamePage> {
     _game.config(widget._args._gameSetting);
 
     if(Global.userProfile.equals(_room.homeOwner)){
-      print("你是房主");
       _game.ishomeOwner = true;
       _send({
         "verb":"start_game",
@@ -95,9 +94,14 @@ class GamePageState extends State<GamePage> {
               (event){
                 dynamic json = Tools.json2Map(event);
                 dynamic jsonVerb = json["verb"];
-                dynamic jsonBody = (json as Map<String, dynamic>).containsKey("body")?json["body"]:{};
+                dynamic jsonBody = json["body"];
+                print("new message:"+json.toString());
+                print("Verb:"+jsonVerb.toString());
+                print(jsonBody);
                 if(jsonVerb.endsWith("_need") || jsonVerb.endsWith("_give")){
-                  _game.sMessages.add(new ServerMessage(json["verb"],jsonBody));
+                  setState(() {
+                    _game.sMessages.add(new ServerMessage(jsonVerb,jsonBody));
+                  });
                 }
                 else {
                   switch(json["verb"]){
@@ -156,9 +160,9 @@ class GamePageState extends State<GamePage> {
     });
   }
 
-  void _checkServerMessage(){
+  ServerMessage _checkServerMessage(){
     ServerMessage sm = _game.sMessages.first;
-    
+    return sm;
   }
 
   @override
@@ -175,11 +179,19 @@ class GamePageState extends State<GamePage> {
           Center(
             child: ElevatedButton(
           onPressed: (){
+            if(_game.sMessages.isEmpty)
+              return;
             showDialog(context: context,builder: (BuildContext context){
-              return ServerMessageDialog(ServerMessage("passive_information_need", {}),_game);
-              // return AlertDialog();
+              return ServerMessageDialog(_checkServerMessage(),_game);
+            }).then((value){
+              if(value == "yes") {
+                print("yes!");
+                setState(() {
+                  _game.sMessages.removeFirst();
+                });
+              }
             });
-            }, child: Text("open dialog"),
+            }, child: Text(!_game.sMessages.isEmpty?"new message!":"null"),
       )
           ),
           Row(
