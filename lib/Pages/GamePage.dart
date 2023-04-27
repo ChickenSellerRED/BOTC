@@ -8,12 +8,15 @@ import 'package:my_flutter_app/Models/Room.dart';
 import 'package:flutter_chat_types/flutter_chat_types.dart' as types;
 import 'package:flutter_chat_ui/flutter_chat_ui.dart';
 import 'package:my_flutter_app/Widgets/Dialog/ServerMessageDialog.dart';
+import 'package:my_flutter_app/Widgets/UserLayoutWidget.dart';
 import 'dart:convert';
 import 'dart:math';
 
 import '../Models/Game.dart';
 import '../Models/GameSetting.dart';
 import '../Models/User.dart';
+import '../Widgets/BlockImgButton.dart';
+import '../Widgets/MessageList.dart';
 import '../common/Global.dart';
 import '../common/ServerMessage.dart';
 import '../common/Tools.dart';
@@ -41,7 +44,6 @@ class GamePage extends StatefulWidget {
 }
 enum Stage<String> {
   freeTalking,
-  nominating,
   voting,
   night
 }
@@ -58,10 +60,6 @@ class GamePageState extends State<GamePage> {
   late Room _room;
   late Game _game;
 
-
-
-
-
   final List<types.Message> _messages = [];
   final _user = const types.User(
       id: '82091008-a484-4a89-ae75-a22bf8d6f3ac',
@@ -71,6 +69,12 @@ class GamePageState extends State<GamePage> {
 
   void _send(dynamic data){
     Global.channel.sink.add(jsonEncode(data));
+  }
+
+  void _addServerMessage(ServerMessage sm){
+    setState(() {
+      _game.sMessages.addFirst(sm);
+    });
   }
 
   @override
@@ -100,14 +104,17 @@ class GamePageState extends State<GamePage> {
                 print(jsonBody);
                 if(jsonVerb.endsWith("_need") || jsonVerb.endsWith("_give")){
                   setState(() {
-                    _game.sMessages.add(new ServerMessage(jsonVerb,jsonBody));
+                    _addServerMessage(ServerMessage(jsonVerb,jsonBody));
                   });
+                  return;
                 }
                 else {
                   switch(json["verb"]){
                     case "character_assign_result":
-                      _game.characters = List<String>.from(jsonBody["characterList"]);
-                      _game.assignCharacters();
+                      setState(() {
+                        _game.characters = List<String>.from(jsonBody["characterList"]);
+                        _game.assignCharacters();
+                      });
                       break;
                   }
                 }
@@ -176,23 +183,58 @@ class GamePageState extends State<GamePage> {
           pageChanged(index);
         },
         children: [
-          Center(
-            child: ElevatedButton(
-          onPressed: (){
-            if(_game.sMessages.isEmpty)
-              return;
-            showDialog(context: context,builder: (BuildContext context){
-              return ServerMessageDialog(_checkServerMessage(),_game);
-            }).then((value){
-              if(value == "yes") {
-                print("yes!");
-                setState(() {
-                  _game.sMessages.removeFirst();
-                });
-              }
-            });
-            }, child: Text(!_game.sMessages.isEmpty?"new message!":"null"),
-      )
+          Column(
+            children: <Widget>[
+              Text("房间:${_room.name}(${_room.roomNumber})"),
+              Row(
+                children:<Widget>[
+                  Text("说书人:"),
+                SizedBox(
+                    width: 40,
+                    height: 40,
+                    child:Image(image: AssetImage(_room.homeOwner.avatarUri))),
+                Text(_room.homeOwner.name)
+                ]
+              ),
+              Row(
+                children: <Widget>[
+                  Text("第${_game.days}天"),
+                  SizedBox(width: 50),
+                  Text(_game.state==Stage.night?"夜晚":_game.state==Stage.freeTalking?"白天，自由讨论":"投票中${_game.voteFrom+1}号玩家 ==> ${_game.voteTo+1}号玩家")
+                ],
+              ),
+              UserLayoutWidget(_game,isGaming:true),
+              Row(
+                children:<Widget>[
+                  SizedBox(width: 20),
+                  Column(
+                  children: <Widget>[
+                    Text("${_game.sMessages.length}"),
+                    BlockImgButton(key:UniqueKey(),Icons.notifications_none_outlined,_game.sMessages.length,
+                        onPress: (){
+                      if(_game.sMessages.isEmpty)
+                        return;
+                      showDialog(context: context,builder: (BuildContext context){
+                        return ServerMessageDialog(_checkServerMessage(),_game);
+                      }).then((value){
+                        if(value == "yes") {
+                          print("yes!");
+                          setState(() {
+                            _game.sMessages.removeFirst();
+                          });
+                        }
+                      });
+                    }
+                    ),
+                    IconButton(icon: Icon(Icons.chat_outlined),onPressed: (){},),
+                    IconButton(icon: Icon(Icons.campaign_outlined),onPressed: (){},),
+
+                  ],
+                ),
+                MessageList(290,250)]
+              )
+
+            ]
           ),
           Row(
             children: <Widget>[

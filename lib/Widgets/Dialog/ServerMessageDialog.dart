@@ -88,19 +88,19 @@ class ServerMessageDialogState extends State<ServerMessageDialog>{
         case "proactive_information_need":
           if(_sm.body["character"] == "占卜师"){
             _maxUser = 0;
-            _hint = "指明占卜师选中的玩家中是否有恶魔";
+            _hint = "占卜师选中了${_sm.body["argument"]["users"][0]+1}号玩家和${_sm.body["argument"]["users"][1]+1}号玩家，指明他们中是否有恶魔";
           }
           else if(_sm.body["character"] == "僧侣"){
             _maxUser = 0;
-            _hint = "僧侣将保护${_sm.body["argument"]["user"]+1}号玩家";
+            _hint = "僧侣将保护${_sm.body["argument"]["protect_user"]+1}号玩家";
           }
           else if(_sm.body["character"] == "管家"){
             _maxUser = 0;
-            _hint = "管家选择了${_sm.body["argument"]["user"]+1}号玩家作为主人";
+            _hint = "管家选择了${_sm.body["argument"]["master_user"]+1}号玩家作为主人";
           }
           else if(_sm.body["character"] == "投毒者"){
             _maxUser = 0;
-            _hint = "投毒者对${_sm.body["argument"]["user"]+1}号玩家下毒";
+            _hint = "投毒者对${_sm.body["argument"]["poison_user"]+1}号玩家下毒";
           }
           else if(_sm.body["character"] == "渡鸦守护者"){
             _maxUser = 0;
@@ -349,9 +349,6 @@ class ServerMessageDialogState extends State<ServerMessageDialog>{
 
   @override
   Widget build(BuildContext context) {
-    _maxUser = 2;
-
-
     return Dialog(
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
@@ -377,6 +374,8 @@ class ServerMessageDialogState extends State<ServerMessageDialog>{
                         _selectedUser = -1;
                     }
                     else{
+                      print(_choosingUsers.length);
+                      print(_maxUser);
                       if(_choosingUsers.length != _maxUser)
                         _choosingUsers.add(userNumber);
                     };

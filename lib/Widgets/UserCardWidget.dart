@@ -37,9 +37,11 @@ class UserCardWidgetState extends State<UserCardWidget>{
             SizedBox(
               width: 40,
               height: 40,
-              child:Image(
-                  image: !widget._user.isDefault()?AssetImage(widget._user.avatarUri):AssetImage("images/empty_seat.jpg"),
-                ),
+              child: Image(
+                          image: !widget._user.isDefault()?AssetImage(widget._user.avatarUri):AssetImage("images/empty_seat.jpg"),
+                          fit: BoxFit.fill,
+                        ),
+
             ),
 
             AutoSizeText(

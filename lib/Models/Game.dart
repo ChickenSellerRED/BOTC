@@ -1,9 +1,11 @@
 import 'dart:collection';
 
+import 'package:flutter/cupertino.dart';
 import 'package:my_flutter_app/Models/GameSetting.dart';
 
 import '../Pages/GamePage.dart';
 import '../common/ServerMessage.dart';
+import '../common/Tools.dart';
 import 'User.dart';
 
 class Game{
@@ -16,7 +18,7 @@ class Game{
   late Map<User,int> nominees = Map();//在处刑台上的所有玩家以及票数
   late User executingUser = User.buildDefault();//将被处刑的玩家
   late List<String> gameLog = List<String>.empty();//游戏日志
-  late Queue<ServerMessage> sMessages = new Queue<ServerMessage>();
+  late Queue<ServerMessage> sMessages = Queue<ServerMessage>();
 
 
   late int monkProtect = -1;//整数 在这一轮被保护的玩家
@@ -26,12 +28,18 @@ class Game{
 
   late GameSetting gameSetting;
 
+  late int voteFrom;
+  late int voteTo;
+
   late bool ishomeOwner;
   //说书人专用
   late List<String> characters; //根据座位排序的角色信息
 
 
-  Game.createNew(){}
+  Game.createNew(){
+    voteFrom = -1;
+    voteTo = -1;
+  }
   void config(GameSetting gs){
     gameSetting = gs;
   }
@@ -39,6 +47,8 @@ class Game{
   void assignCharacters(){
     for(int i=0;i<characters.length;i++){
       seats[i].character = characters[i];
+      seats[i].avatarUri = "images/character_avatar/Icon_" + Tools.toAvatarName(characters[i]) + ".png";
     }
   }
+
 }

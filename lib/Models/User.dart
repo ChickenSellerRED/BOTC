@@ -19,6 +19,10 @@ class User{
 
   String get avatarUri => _avatarUri;
 
+  set avatarUri(String value) {
+    _avatarUri = value;
+  }
+
   String get uuid => _uuid;
 
   Map<String,dynamic> toHeader(){
