@@ -4,6 +4,7 @@ import 'dart:io';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:my_flutter_app/Models/ChatRoom.dart';
 import 'package:my_flutter_app/Models/Room.dart';
 import 'package:flutter_chat_types/flutter_chat_types.dart' as types;
 import 'package:flutter_chat_ui/flutter_chat_ui.dart';
@@ -60,7 +61,10 @@ class GamePageState extends State<GamePage> {
   late Room _room;
   late Game _game;
 
-  final List<types.Message> _messages = [];
+  late List<ChatRoom> _chatRooms = [];
+  late List<types.Message> _messages = [];
+  late int _chatWindowNumber;
+
   final _user = const types.User(
       id: '82091008-a484-4a89-ae75-a22bf8d6f3ac',
       firstName: "Jize",
@@ -93,6 +97,31 @@ class GamePageState extends State<GamePage> {
       print("你不是房主");
       _game.ishomeOwner = false;
     }
+
+    int chatWindowNumber = 0;
+    if(_game.ishomeOwner)
+      _chatWindowNumber = _room.maxpeople+1;//如果是房主就和每个人都有聊天框+邪恶群聊
+    else{
+      _chatWindowNumber = 0;
+    }
+    if(_game.ishomeOwner){
+      List<User> evils = _game.getEvils();
+      _chatRooms.add(ChatRoom([], false,chatUsers:evils));
+      _game.seats.forEach((u) {_chatRooms.add(ChatRoom([], true,chatUser:u));});
+    }else{
+      if(Global.userProfile.isEvil()){
+        List<User> evils = _game.getEvils();
+        evils = evils.where((u) => u.equals(Global.userProfile)).toList();
+        evils.add(_room.homeOwner);
+        _chatRooms.add(ChatRoom([], false,chatUsers:evils));
+        _game.seats.forEach((u) {
+          if(!u.equals(Global.userProfile))
+            _chatRooms.add(ChatRoom([], true,chatUser:u));
+        });
+      }
+    }
+
+
     if(Global.channel != null){
       Global.stream.listen(
               (event){
@@ -116,6 +145,11 @@ class GamePageState extends State<GamePage> {
                         _game.assignCharacters();
                       });
                       break;
+                    case "your_character":
+                      setState((){
+                        Global.userProfile.character = jsonBody["character"];
+                        Global.userProfile.fakeCharacter = jsonBody["fake_character"];
+                      });
                   }
                 }
           }
@@ -145,8 +179,6 @@ class GamePageState extends State<GamePage> {
       id: randomString(),
       text: message.text,
     );
-
-    _addMessage(textMessage);
 
     final otherMessage = types.TextMessage(
       author: types.User(
@@ -257,7 +289,7 @@ class GamePageState extends State<GamePage> {
                                 labelType: NavigationRailLabelType.selected,
                                 destinations:
                                     List<NavigationRailDestination>.generate(
-                                        9,
+                                        _chatRooms.length,
                                         (index) => NavigationRailDestination(
                                               icon: Icon(Icons.favorite_border),
                                               selectedIcon:
@@ -267,7 +299,6 @@ class GamePageState extends State<GamePage> {
                           )),
                     ));
               }),
-
               VerticalDivider(thickness: 1, width: 1),
               // This is the main content.
               Expanded(

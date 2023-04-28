@@ -9,6 +9,8 @@ import '../common/Tools.dart';
 import 'User.dart';
 
 class Game{
+
+  static List<String> evils = ["投毒者","间谍","男爵","红唇女郎","小恶魔"];
   late int maxPeople;
   late List<User> seats;
   late int days = 0;//游戏天数
@@ -52,4 +54,13 @@ class Game{
     }
   }
 
+  List<User> getEvils(){
+    List<User> ans = [];
+    this.seats.forEach((u) {
+      if(Game.evils.contains(u.character)){
+        ans.add(u);
+      }
+    });
+    return ans;
+  }
 }

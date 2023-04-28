@@ -2,6 +2,8 @@ import 'dart:math';
 import 'dart:ui';
 import 'package:uuid/uuid.dart';
 
+import 'Game.dart';
+
 class User{
   String _name;
   String _avatarUri;
@@ -11,6 +13,9 @@ class User{
   late bool isAlive;
   late String character;
   late String fakeCharacter;
+  late int _seatNumber;
+
+  int get seatNumber => _seatNumber;
 
   User(this._name, this._avatarUri):
     _uuid = new Uuid().v4();
@@ -19,6 +24,7 @@ class User{
 
 
   String get charAvatarUri => _chatAvatarUri;
+
 
   set chatAvatarUri(String value) {
     _chatAvatarUri = value;
@@ -63,5 +69,9 @@ class User{
 
   bool isDefault(){
     return this.uuid == "default uuid";
+  }
+
+  bool isEvil(){
+    return Game.evils.contains(this.character);
   }
 }
