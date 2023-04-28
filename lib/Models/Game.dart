@@ -47,6 +47,7 @@ class Game{
   void assignCharacters(){
     for(int i=0;i<characters.length;i++){
       seats[i].character = characters[i];
+      seats[i].chatAvatarUri = seats[i].avatarUri;
       seats[i].avatarUri = "images/character_avatar/Icon_" + Tools.toAvatarName(characters[i]) + ".png";
     }
   }

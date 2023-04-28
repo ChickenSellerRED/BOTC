@@ -5,6 +5,7 @@ import 'package:uuid/uuid.dart';
 class User{
   String _name;
   String _avatarUri;
+  late String _chatAvatarUri;
   String? _friendCode;
   String _uuid;
   late bool isAlive;
@@ -16,6 +17,12 @@ class User{
 
   String get name => _name;
 
+
+  String get charAvatarUri => _chatAvatarUri;
+
+  set chatAvatarUri(String value) {
+    _chatAvatarUri = value;
+  }
 
   String get avatarUri => _avatarUri;
 
