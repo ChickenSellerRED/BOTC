@@ -47,7 +47,8 @@ class SwitchGameModePageState extends State<SwitchGameModePage>{
             ElevatedButton(
                 style: ElevatedButton.styleFrom(textStyle: const TextStyle(fontSize:20)),
                 onPressed: startOnlineMode,
-                child: const Text("Online Mode"),)
+                child: const Text("Online Mode"),
+            )
           ],
         ),
       ),

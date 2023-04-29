@@ -30,6 +30,8 @@ class User{
     _chatAvatarUri = value;
   }
 
+  String get chatAvatarUri => _chatAvatarUri;
+
   String get avatarUri => _avatarUri;
 
   set avatarUri(String value) {

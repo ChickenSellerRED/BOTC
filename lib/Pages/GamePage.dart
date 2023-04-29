@@ -8,6 +8,7 @@ import 'package:my_flutter_app/Models/ChatRoom.dart';
 import 'package:my_flutter_app/Models/Room.dart';
 import 'package:flutter_chat_types/flutter_chat_types.dart' as types;
 import 'package:flutter_chat_ui/flutter_chat_ui.dart';
+import 'package:my_flutter_app/Widgets/ChatAvatar.dart';
 import 'package:my_flutter_app/Widgets/Dialog/ServerMessageDialog.dart';
 import 'package:my_flutter_app/Widgets/UserLayoutWidget.dart';
 import 'dart:convert';
@@ -98,28 +99,7 @@ class GamePageState extends State<GamePage> {
       _game.ishomeOwner = false;
     }
 
-    int chatWindowNumber = 0;
-    if(_game.ishomeOwner)
-      _chatWindowNumber = _room.maxpeople+1;//如果是房主就和每个人都有聊天框+邪恶群聊
-    else{
-      _chatWindowNumber = 0;
-    }
-    if(_game.ishomeOwner){
-      List<User> evils = _game.getEvils();
-      _chatRooms.add(ChatRoom([], false,chatUsers:evils));
-      _game.seats.forEach((u) {_chatRooms.add(ChatRoom([], true,chatUser:u));});
-    }else{
-      if(Global.userProfile.isEvil()){
-        List<User> evils = _game.getEvils();
-        evils = evils.where((u) => u.equals(Global.userProfile)).toList();
-        evils.add(_room.homeOwner);
-        _chatRooms.add(ChatRoom([], false,chatUsers:evils));
-        _game.seats.forEach((u) {
-          if(!u.equals(Global.userProfile))
-            _chatRooms.add(ChatRoom([], true,chatUser:u));
-        });
-      }
-    }
+
 
 
     if(Global.channel != null){
@@ -143,6 +123,7 @@ class GamePageState extends State<GamePage> {
                       setState(() {
                         _game.characters = List<String>.from(jsonBody["characterList"]);
                         _game.assignCharacters();
+                        _initChatRoom();
                       });
                       break;
                     case "your_character":
@@ -156,7 +137,30 @@ class GamePageState extends State<GamePage> {
       );
     }
   }
-
+  void _initChatRoom(){
+    if(_game.ishomeOwner)
+      _chatWindowNumber = _room.maxpeople+1;//如果是房主就和每个人都有聊天框+邪恶群聊
+    else{
+      _chatWindowNumber = 0;
+    }
+    if(_game.ishomeOwner){
+      List<User> evils = _game.getEvils();
+      _chatRooms.add(ChatRoom([], false,"邪恶阵营",chatUsers:evils));
+      _game.seats.forEach((u) {_chatRooms.add(ChatRoom([], true,u.name,chatUser:u));});
+    }else{
+      if(Global.userProfile.isEvil()){
+        _chatRooms.add(ChatRoom([], true,"说书人",chatUser:_room.homeOwner));
+        List<User> evils = _game.getEvils();
+        evils = evils.where((u) => u.equals(Global.userProfile)).toList();
+        evils.add(_room.homeOwner);
+        _chatRooms.add(ChatRoom([], false,"邪恶阵营",chatUsers:evils));
+        _game.seats.forEach((u) {
+          if(!u.equals(Global.userProfile))
+            _chatRooms.add(ChatRoom([], true,u.name,chatUser:u));
+        });
+      }
+    }
+  }
 
 
   List<BottomNavigationBarItem> buildBottomNavBarItems() {
@@ -277,10 +281,14 @@ class GamePageState extends State<GamePage> {
                     padding: EdgeInsets.all(0),
                     child: SingleChildScrollView(
                       child: ConstrainedBox(
-                          constraints: BoxConstraints(minHeight: 657),
+                          constraints: BoxConstraints(minHeight: 0),
                           child: IntrinsicHeight(
                             child: NavigationRail(
                                 selectedIndex: _selectedChatIndex,
+                                // backgroundColor: Colors.green,
+                                selectedIconTheme: IconThemeData(
+                                  color: Colors.red
+                                ),
                                 onDestinationSelected: (int index) {
                                   setState(() {
                                     _selectedChatIndex = index;
@@ -290,11 +298,12 @@ class GamePageState extends State<GamePage> {
                                 destinations:
                                     List<NavigationRailDestination>.generate(
                                         _chatRooms.length,
-                                        (index) => NavigationRailDestination(
-                                              icon: Icon(Icons.favorite_border),
-                                              selectedIcon:
-                                                  Icon(Icons.favorite),
+                                          (index) => NavigationRailDestination(
+                                              padding: EdgeInsets.all(0),
+                                              icon: ChatAvatar(_chatRooms[index].generateChatAvatarUri(),false),
+                                              selectedIcon:ChatAvatar(_chatRooms[index].generateChatAvatarUri(),true),
                                               label: Text('First'),
+
                                             ))),
                           )),
                     ));

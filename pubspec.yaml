@@ -68,6 +68,7 @@ flutter:
     - images/avatar_1.png
     - images/empty_seat.jpg
     - images/character_avatar/
+    - images/evil_chat_avatar.png
 
   # To add assets to your application, add an assets section, like this:
   # assets:
