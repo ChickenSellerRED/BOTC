@@ -302,7 +302,10 @@ class GamePageState extends State<GamePage> {
                                               padding: EdgeInsets.all(0),
                                               icon: ChatAvatar(_chatRooms[index].generateChatAvatarUri(),false),
                                               selectedIcon:ChatAvatar(_chatRooms[index].generateChatAvatarUri(),true),
-                                              label: Text('First'),
+                                              label: Text(
+                                                  overflow: TextOverflow.ellipsis,
+                                                  _chatRooms[index].name
+                                              ),
 
                                             ))),
                           )),
