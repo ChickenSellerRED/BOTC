@@ -50,7 +50,6 @@ class WaitInRoomPage extends StatefulWidget {
 class WaitInRoomPageState extends State<WaitInRoomPage> {
   late Room _room;
   late List<User> _users;
-  late List<User> _seats;
   late Game _game;
   final subscription = Global.stream.listen(null);
 
@@ -95,6 +94,8 @@ class WaitInRoomPageState extends State<WaitInRoomPage> {
         print("connect success");
       } else {
         if (json["verb"] == "game_can_start"){
+          Global.userProfile.seatNumber = -1;
+          _game.seats.asMap().forEach((index,u) {u.seatNumber = index; });
           Navigator.of(context).pushNamed(
               "GamePage",
               arguments:GamePageArgument(_room, _game)
@@ -103,16 +104,17 @@ class WaitInRoomPageState extends State<WaitInRoomPage> {
           setState((){
             _room = Room.buildFromJSON(json["room"]);
             _testInitUsers();
-            _game.seats = _seats;
           });
         } else if (json["verb"] == "someone_joined") {
           User newUser = User.buildFromJSON(jsonBody["user"]);
           setState(() {
             _users.add(newUser);
-            _seats[jsonBody["seat_number"]] = newUser;
+            _game.seats[jsonBody["seat_number"]] = newUser;
           });
         } else if (json["verb"] == "someone_exit_room") {
           _users.removeWhere(
+                  (u) => u.equals(User.buildFromJSON(json["user"])));
+          _game.seats.removeWhere(
                   (u) => u.equals(User.buildFromJSON(json["user"])));
         }else if (json["verb"] == "room_close") {
           print("room closed, reason:"+json["reason"]);
@@ -123,7 +125,7 @@ class WaitInRoomPageState extends State<WaitInRoomPage> {
   }
 
   void _testInitUsers(){
-    _seats = List<User>.filled(this._room.maxpeople, User.buildDefault());
+    _game.seats = List<User>.filled(this._room.maxpeople, User.buildDefault());
     // _addAMember(User('李家豪',"images/avatar_0.png"));
     // _addAMember(User('刘林虎',"images/avatar_1.png"));
     // _addAMember(User('李家豪',"images/avatar_0.png"));
@@ -143,9 +145,9 @@ class WaitInRoomPageState extends State<WaitInRoomPage> {
 
   void _addAMember(User user){
     _users.add(user);
-    for(int i=0;i<_seats.length;i++){
-      if(_seats[i].isDefault()){
-        _seats[i] = user;
+    for(int i=0;i<_game.seats.length;i++){
+      if(_game.seats[i].isDefault()){
+        _game.seats[i] = user;
         return;
       }
     }
@@ -172,9 +174,9 @@ class WaitInRoomPageState extends State<WaitInRoomPage> {
     });
     print("sent!");
     setState(() {
-      User tem = _seats[target];
-      _seats[target] = _seats[index];
-      _seats[index] = tem;
+      User tem = _game.seats[target];
+      _game.seats[target] = _game.seats[index];
+      _game.seats[index] = tem;
     });
   }
   Widget build(BuildContext context) {

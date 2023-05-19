@@ -1,6 +1,8 @@
 import 'dart:math';
 import 'dart:ui';
 import 'package:uuid/uuid.dart';
+import 'package:flutter_chat_types/flutter_chat_types.dart' as types;
+
 
 import 'Game.dart';
 
@@ -16,6 +18,10 @@ class User{
   late int _seatNumber;
 
   int get seatNumber => _seatNumber;
+
+  set seatNumber(int value) {
+    _seatNumber = value;
+  }
 
   User(this._name, this._avatarUri):
     _uuid = new Uuid().v4();
@@ -76,4 +82,14 @@ class User{
   bool isEvil(){
     return Game.evils.contains(this.character);
   }
+
+  types.User? chatUser;
+  void initChatUser(){
+    chatUser = new types.User(id: uuid,imageUrl: chatAvatarUri,firstName: name,lastName: seatNumber==-1?"说书人":"(玩家 #${seatNumber})");
+  }
+  types.User toChatUser(){
+    chatUser??initChatUser();
+    return chatUser!;
+}
+
 }

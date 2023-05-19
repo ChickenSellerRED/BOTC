@@ -62,14 +62,11 @@ class GamePageState extends State<GamePage> {
   late Room _room;
   late Game _game;
 
-  late List<ChatRoom> _chatRooms = [];
+  late List<ChatRoom> _chatRooms = [ChatRoom(1, [], true, "自己", types.User(id:"123"))];
   late List<types.Message> _messages = [];
   late int _chatWindowNumber;
 
-  final _user = const types.User(
-      id: '82091008-a484-4a89-ae75-a22bf8d6f3ac',
-      firstName: "Jize",
-      lastName: "Bi");
+  late types.User _user;
 
 
   void _send(dynamic data){
@@ -99,8 +96,10 @@ class GamePageState extends State<GamePage> {
       _game.ishomeOwner = false;
     }
 
-
-
+    _user = types.User(
+      id: Global.userProfile.uuid,
+      firstName: Global.userProfile.name,
+      lastName: _game.ishomeOwner?"说书人":"(玩家 #${Global.userProfile.seatNumber.toString()}");
 
     if(Global.channel != null){
       Global.stream.listen(
@@ -118,7 +117,7 @@ class GamePageState extends State<GamePage> {
                   return;
                 }
                 else {
-                  switch(json["verb"]){
+                  switch(jsonVerb){
                     case "character_assign_result":
                       setState(() {
                         _game.characters = List<String>.from(jsonBody["characterList"]);
@@ -131,6 +130,15 @@ class GamePageState extends State<GamePage> {
                         Global.userProfile.character = jsonBody["character"];
                         Global.userProfile.fakeCharacter = jsonBody["fake_character"];
                       });
+                      break;
+                    case "new_chat_message":
+                      _chatRooms.forEach((room) {
+                        if(room.chatRoomNumber == jsonBody["chat_room_number"]){
+                          User sender = jsonBody["from_seat_number"]==-1?_room.homeOwner:_game.seats[jsonBody["from_seat_number"]];
+                          room.addOuterMessage(sender,jsonBody["message"]);
+                        }
+                      });
+                      break;
                   }
                 }
           }
@@ -138,6 +146,7 @@ class GamePageState extends State<GamePage> {
     }
   }
   void _initChatRoom(){
+    _chatRooms = [];
     if(_game.ishomeOwner)
       _chatWindowNumber = _room.maxpeople+1;//如果是房主就和每个人都有聊天框+邪恶群聊
     else{
@@ -145,20 +154,21 @@ class GamePageState extends State<GamePage> {
     }
     if(_game.ishomeOwner){
       List<User> evils = _game.getEvils();
-      _chatRooms.add(ChatRoom([], false,"邪恶阵营",chatUsers:evils));
-      _game.seats.forEach((u) {_chatRooms.add(ChatRoom([], true,u.name,chatUser:u));});
+      _chatRooms.add(ChatRoom(-2,[], false,"邪恶阵营",_user,chatUsers:evils));
+      _game.seats.forEach((u) {_chatRooms.add(ChatRoom(u.seatNumber,[], true,u.name,_user,chatUser:u));});
     }else{
+      _chatRooms.add(ChatRoom(-1,[], true,"说书人",_user,chatUser:_room.homeOwner));
       if(Global.userProfile.isEvil()){
-        _chatRooms.add(ChatRoom([], true,"说书人",chatUser:_room.homeOwner));
         List<User> evils = _game.getEvils();
         evils = evils.where((u) => u.equals(Global.userProfile)).toList();
         evils.add(_room.homeOwner);
-        _chatRooms.add(ChatRoom([], false,"邪恶阵营",chatUsers:evils));
-        _game.seats.forEach((u) {
-          if(!u.equals(Global.userProfile))
-            _chatRooms.add(ChatRoom([], true,u.name,chatUser:u));
-        });
+        _chatRooms.add(ChatRoom(-2,[], false,"邪恶阵营",_user,chatUsers:evils));
+
       }
+      _game.seats.forEach((u) {
+        if(!u.equals(Global.userProfile))
+          _chatRooms.add(ChatRoom(u.seatNumber,[], true,u.name,_user,chatUser:u));
+      });
     }
   }
 
@@ -170,31 +180,12 @@ class GamePageState extends State<GamePage> {
     ];
   }
 
-  String randomString() {
-    final random = Random.secure();
-    final values = List<int>.generate(16, (i) => random.nextInt(255));
-    return base64UrlEncode(values);
-  }
+
 
   void _handleSendPressed(types.PartialText message) {
-    final textMessage = types.TextMessage(
-      author: _user,
-      createdAt: DateTime.now().millisecondsSinceEpoch,
-      id: randomString(),
-      text: message.text,
-    );
-
-    final otherMessage = types.TextMessage(
-      author: types.User(
-          id: '82091001-a484-4a89-ae75-a22bf8d6f3ac',
-          firstName: "Jize",
-          lastName: "Bi"),
-      createdAt: DateTime.now().millisecondsSinceEpoch,
-      id: randomString(),
-      text: "朕知道了",
-    );
-    var timer = Timer(Duration(seconds: 1), () => _addMessage(otherMessage));
-    // timer.cancel();
+    setState(() {
+      _chatRooms[_selectedChatIndex].addMessage(message);
+    });
   }
 
   void _addMessage(types.Message message) {
@@ -245,7 +236,6 @@ class GamePageState extends State<GamePage> {
                   SizedBox(width: 20),
                   Column(
                   children: <Widget>[
-                    Text("${_game.sMessages.length}"),
                     BlockImgButton(key:UniqueKey(),Icons.notifications_none_outlined,_game.sMessages.length,
                         onPress: (){
                       if(_game.sMessages.isEmpty)
@@ -316,7 +306,7 @@ class GamePageState extends State<GamePage> {
               Expanded(
                 child: Center(
                   child: Chat(
-                    messages: _messages,
+                    messages: _chatRooms[_selectedChatIndex].messages,
                     onSendPressed: _handleSendPressed,
                     user: _user,
                     showUserAvatars: true,
