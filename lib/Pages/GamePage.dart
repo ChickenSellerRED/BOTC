@@ -68,6 +68,10 @@ class GamePageState extends State<GamePage> {
 
   late types.User _user;
 
+  GlobalKey _bottomNavigationKey = GlobalKey<State<BottomNavigationBar>>();
+  GlobalKey _chatNavigationKey = GlobalKey<State<NavigationRail>>();
+
+  int _unReadMessageNumber = 0;
 
   void _send(dynamic data){
     Global.channel.sink.add(jsonEncode(data));
@@ -132,10 +136,22 @@ class GamePageState extends State<GamePage> {
                       });
                       break;
                     case "new_chat_message":
-                      _chatRooms.forEach((room) {
-                        if(room.chatRoomNumber == jsonBody["chat_room_number"]){
-                          User sender = jsonBody["from_seat_number"]==-1?_room.homeOwner:_game.seats[jsonBody["from_seat_number"]];
-                          room.addOuterMessage(sender,jsonBody["message"]);
+                      int chatRoomNumber = jsonBody["chat_room_number"];
+                      int fromSeatNumber = jsonBody["from_seat_number"];
+                      _chatRooms.asMap().forEach((index,room) {
+                        // print("chatRoomNumber:${room.chatRoomNumber} chatRoomNumber:${chatRoomNumber}");
+                        if(room.chatRoomNumber == chatRoomNumber){
+                          User sender = jsonBody["from_seat_number"]==-1?_room.homeOwner:_game.seats[fromSeatNumber];
+                          if(_bottomSelectedIndex == 1  && _selectedChatIndex == index){//在当前屏幕 直接加载
+                            setState(() {
+                              room.addOuterMessage(sender, jsonBody["message"]);
+                            });
+                          }else{//没在当前屏幕 加到未读列表
+                            setState(() {
+                              room.addUnreadOuterMessage(sender,jsonBody["message"]);
+                              _unReadMessageNumber ++;
+                            });
+                          }
                         }
                       });
                       break;
@@ -252,7 +268,16 @@ class GamePageState extends State<GamePage> {
                       });
                     }
                     ),
-                    IconButton(icon: Icon(Icons.chat_outlined),onPressed: (){},),
+                    BlockImgButton(key:UniqueKey(),Icons.chat_outlined, _unReadMessageNumber,
+                        onPress: (){
+                          print("chat_outlined clicked!");
+                          (_bottomNavigationKey.currentWidget as BottomNavigationBar).onTap!(1);
+                          setState(() {
+                            _selectedChatIndex = 12;
+                          });
+
+                    }
+                    ),
                     IconButton(icon: Icon(Icons.campaign_outlined),onPressed: (){},),
 
                   ],
@@ -274,6 +299,7 @@ class GamePageState extends State<GamePage> {
                           constraints: BoxConstraints(minHeight: 0),
                           child: IntrinsicHeight(
                             child: NavigationRail(
+                                key: _chatNavigationKey,
                                 selectedIndex: _selectedChatIndex,
                                 // backgroundColor: Colors.green,
                                 selectedIconTheme: IconThemeData(
@@ -282,7 +308,10 @@ class GamePageState extends State<GamePage> {
                                 onDestinationSelected: (int index) {
                                   setState(() {
                                     _selectedChatIndex = index;
+                                    _unReadMessageNumber -= _chatRooms[_selectedChatIndex].unReadMessageNumber;
+                                    _chatRooms[_selectedChatIndex].loadUnreadMessages();
                                   });
+
                                 },
                                 labelType: NavigationRailLabelType.selected,
                                 destinations:
@@ -290,8 +319,8 @@ class GamePageState extends State<GamePage> {
                                         _chatRooms.length,
                                           (index) => NavigationRailDestination(
                                               padding: EdgeInsets.all(0),
-                                              icon: ChatAvatar(_chatRooms[index].generateChatAvatarUri(),false),
-                                              selectedIcon:ChatAvatar(_chatRooms[index].generateChatAvatarUri(),true),
+                                              icon: ChatAvatar(_chatRooms[index].generateChatAvatarUri(),false,_chatRooms[index].unReadMessageNumber),
+                                              selectedIcon:ChatAvatar(_chatRooms[index].generateChatAvatarUri(),true,_chatRooms[index].unReadMessageNumber),
                                               label: Text(
                                                   overflow: TextOverflow.ellipsis,
                                                   _chatRooms[index].name
@@ -319,6 +348,7 @@ class GamePageState extends State<GamePage> {
         ],
       ),
       bottomNavigationBar: BottomNavigationBar(
+        key: _bottomNavigationKey,
         currentIndex: _bottomSelectedIndex,
         onTap: (index) {
           bottomTapped(index);

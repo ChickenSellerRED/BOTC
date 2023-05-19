@@ -1,3 +1,4 @@
+import 'dart:collection';
 import 'dart:convert';
 import 'dart:math';
 import 'dart:ui';
@@ -10,8 +11,10 @@ import 'User.dart';
 
 class ChatRoom{
   final List<types.Message> _messages;
+  final Queue<types.Message> _unReadMessages;
 
   List<types.Message> get messages => _messages;
+
   final int _chatRoomNumber;
 
   int get chatRoomNumber => _chatRoomNumber;
@@ -22,7 +25,8 @@ class ChatRoom{
 
   final types.User _user;
 
-  ChatRoom(this._chatRoomNumber,this._messages, this._isSingle,this.name,this._user,{this.chatUsers,this.chatUser});
+  ChatRoom(this._chatRoomNumber,this._messages, this._isSingle,this.name,this._user,{this.chatUsers,this.chatUser}):
+        _unReadMessages = Queue<types.Message>();
 
   String generateChatAvatarUri(){
     if(!_isSingle)
@@ -55,6 +59,7 @@ class ChatRoom{
       id: randomString(),
       text: message,
     );
+    print("聊天框#${chatRoomNumber}添加消息:${message}");
     _messages.insert(0,textMessage);
   }
 
@@ -67,4 +72,32 @@ class ChatRoom{
   void _send(dynamic data){
     Global.channel.sink.add(jsonEncode(data));
   }
+
+  int _unReadMessageNumber = 0;
+
+  int get unReadMessageNumber => _unReadMessageNumber;
+
+  void loadUnreadMessages(){
+    _unReadMessageNumber = 0;
+    while(!_unReadMessages.isEmpty){
+      types.Message m = _unReadMessages.first;
+      _messages.insert(0,m);
+      _unReadMessages.removeFirst();
+    }
+  }
+  void addUnreadOuterMessage(User sender, String message){
+    final textMessage = types.TextMessage(
+      author: sender.toChatUser(),
+      createdAt: DateTime.now().millisecondsSinceEpoch,
+      id: randomString(),
+      text: message,
+    );
+    _unReadMessages.add(textMessage);
+    _unReadMessageNumber = _unReadMessages.length;
+    print("聊天框#${chatRoomNumber}未读消息:${_unReadMessageNumber}");
+  }
+
+
+
+
 }

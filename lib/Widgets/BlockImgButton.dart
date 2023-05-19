@@ -28,9 +28,7 @@ class BlockImgButtonState extends State<BlockImgButton>{
   }
   @override
   Widget build(BuildContext context) {
-    print("unreadNumber:${_unReadNumber}");
-    return _unReadNumber > 0
-        ? Stack(
+    return Stack(
       alignment: Alignment.topRight,
       children: [
         IconButton(
@@ -39,7 +37,7 @@ class BlockImgButtonState extends State<BlockImgButton>{
             this._onPress!();
           },
         ),
-        Positioned(
+        _unReadNumber > 0 ? Positioned(
           top: 0.0,
           right: 0.0,
           child: Container(
@@ -57,14 +55,8 @@ class BlockImgButtonState extends State<BlockImgButton>{
               ),
             ),
           ),
-        ),
+        ):Container(),
       ],
-    )
-        : IconButton(
-      icon: Icon(_icons),
-      onPressed: () {
-        print("unreadNumber:${_unReadNumber}");
-      },
     );
   }
 
