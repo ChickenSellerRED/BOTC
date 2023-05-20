@@ -69,8 +69,8 @@ class GamePageState extends State<GamePage> {
   late types.User _user;
 
   GlobalKey _bottomNavigationKey = GlobalKey<State<BottomNavigationBar>>();
-  GlobalKey _chatNavigationKey = GlobalKey<State<NavigationRail>>();
-  final ScrollController _scrollController = ScrollController();
+  GlobalKey _chatNavigationKey = GlobalKey();
+  late ScrollController _scrollController;
 
 
   int _unReadMessageNumber = 0;
@@ -87,6 +87,13 @@ class GamePageState extends State<GamePage> {
 
   @override
   void initState() {
+
+    print("initState");
+
+    _scrollController = ScrollController();
+    _scrollController.addListener(() {_savedChatOffset = _scrollController.offset;});
+
+
     _room = widget._args._room;
     _game = widget._args._game;
     _game.config(widget._args._gameSetting);
@@ -150,6 +157,7 @@ class GamePageState extends State<GamePage> {
                             });
                           }else{//没在当前屏幕 加到未读列表
                               room.addUnreadOuterMessage(sender,jsonBody["message"]);
+                              print("${_bottomSelectedIndex} ${_selectedChatIndex} ${index}");
                               setState(() {
                               _unReadMessageNumber ++;
                             });
@@ -287,18 +295,9 @@ class GamePageState extends State<GamePage> {
                             _selectedChatIndex = unReadIndex;
                             _unReadMessageNumber -= _chatRooms[unReadIndex].unReadMessageNumber;
                             _chatRooms[unReadIndex].loadUnreadMessages();
+                            //控制滑动
+                            _savedChatOffset  = 1000;
                           });
-
-                          WidgetsBinding.instance.addPostFrameCallback((_) {
-                            // while(!_scrollController.hasClients){
-                            //   print("dont have clients!");
-                            // }
-                            print(_scrollController);
-                            print("slide!");
-                            _scrollController.animateTo(_scrollController.position.maxScrollExtent, duration: Duration(milliseconds: 500), curve: Curves.ease);
-
-                          });
-                          //控制滑动
 
                     }
                     ),
@@ -322,6 +321,7 @@ class GamePageState extends State<GamePage> {
                         controller: _scrollController,
                         thumbVisibility: true,
                         child:SingleChildScrollView(
+                          key: _chatNavigationKey,
                           controller: _scrollController,
                           child:
                           // SizedBox(height: 1000,width: 40,),
@@ -329,7 +329,6 @@ class GamePageState extends State<GamePage> {
                               constraints: const BoxConstraints(minHeight: 0),
                               child: IntrinsicHeight(
                                 child: NavigationRail(
-                                    key: _chatNavigationKey,
                                     selectedIndex: _selectedChatIndex,
                                     // backgroundColor: Colors.green,
                                     selectedIconTheme: const IconThemeData(
@@ -375,6 +374,11 @@ class GamePageState extends State<GamePage> {
                   ),
                 ),
               ),
+              ElevatedButton(onPressed: (){
+                print(_scrollController);
+                print("slide!");
+                _scrollController.animateTo(_scrollController.position.maxScrollExtent, duration: Duration(milliseconds: 500), curve: Curves.ease);
+              }, child: Container())
             ],
           ),
         ],
@@ -398,7 +402,21 @@ class GamePageState extends State<GamePage> {
     });
   }
 
+  double _savedChatOffset = 0;
+
   void pageChanged(int index) {
+    print("page change to ${index}");
+    if(index != 1)
+      _savedChatOffset = _scrollController.offset;
+    if(index == 1){
+      print(_savedChatOffset);
+      print(_scrollController);
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if(_scrollController.hasClients)
+          _scrollController.jumpTo(_savedChatOffset);
+      });
+    }
+
     setState(() {
       _bottomSelectedIndex = index;
     });
