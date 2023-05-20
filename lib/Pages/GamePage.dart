@@ -70,6 +70,8 @@ class GamePageState extends State<GamePage> {
 
   GlobalKey _bottomNavigationKey = GlobalKey<State<BottomNavigationBar>>();
   GlobalKey _chatNavigationKey = GlobalKey<State<NavigationRail>>();
+  final ScrollController _scrollController = ScrollController();
+
 
   int _unReadMessageNumber = 0;
 
@@ -147,8 +149,8 @@ class GamePageState extends State<GamePage> {
                               room.addOuterMessage(sender, jsonBody["message"]);
                             });
                           }else{//没在当前屏幕 加到未读列表
-                            setState(() {
                               room.addUnreadOuterMessage(sender,jsonBody["message"]);
+                              setState(() {
                               _unReadMessageNumber ++;
                             });
                           }
@@ -271,10 +273,32 @@ class GamePageState extends State<GamePage> {
                     BlockImgButton(key:UniqueKey(),Icons.chat_outlined, _unReadMessageNumber,
                         onPress: (){
                           print("chat_outlined clicked!");
-                          (_bottomNavigationKey.currentWidget as BottomNavigationBar).onTap!(1);
                           setState(() {
-                            _selectedChatIndex = 12;
+                            //切换到聊天页
+                            (_bottomNavigationKey.currentWidget as BottomNavigationBar).onTap!(1);
+                            //切换到未读聊天页面
+                            if(_unReadMessageNumber == 0)
+                              return;
+                            int unReadIndex = 0;
+                            for(;unReadIndex<_chatRooms.length;unReadIndex++){
+                              if(_chatRooms[unReadIndex].unReadMessageNumber > 0)
+                                break;
+                            }
+                            _selectedChatIndex = unReadIndex;
+                            _unReadMessageNumber -= _chatRooms[unReadIndex].unReadMessageNumber;
+                            _chatRooms[unReadIndex].loadUnreadMessages();
                           });
+
+                          WidgetsBinding.instance.addPostFrameCallback((_) {
+                            // while(!_scrollController.hasClients){
+                            //   print("dont have clients!");
+                            // }
+                            print(_scrollController);
+                            print("slide!");
+                            _scrollController.animateTo(_scrollController.position.maxScrollExtent, duration: Duration(milliseconds: 500), curve: Curves.ease);
+
+                          });
+                          //控制滑动
 
                     }
                     ),
@@ -290,45 +314,53 @@ class GamePageState extends State<GamePage> {
           Row(
             children: <Widget>[
               LayoutBuilder(builder: (context, constraint) {
-                print(constraint.maxHeight);
+                // print(constraint.maxHeight);
                 //todo:解决项比较少时，滚动不固定的问题
                 return Padding(
-                    padding: EdgeInsets.all(0),
-                    child: SingleChildScrollView(
-                      child: ConstrainedBox(
-                          constraints: BoxConstraints(minHeight: 0),
-                          child: IntrinsicHeight(
-                            child: NavigationRail(
-                                key: _chatNavigationKey,
-                                selectedIndex: _selectedChatIndex,
-                                // backgroundColor: Colors.green,
-                                selectedIconTheme: IconThemeData(
-                                  color: Colors.red
-                                ),
-                                onDestinationSelected: (int index) {
-                                  setState(() {
-                                    _selectedChatIndex = index;
-                                    _unReadMessageNumber -= _chatRooms[_selectedChatIndex].unReadMessageNumber;
-                                    _chatRooms[_selectedChatIndex].loadUnreadMessages();
-                                  });
+                    padding: const EdgeInsets.all(0),
+                    child: Scrollbar(
+                        controller: _scrollController,
+                        thumbVisibility: true,
+                        child:SingleChildScrollView(
+                          controller: _scrollController,
+                          child:
+                          // SizedBox(height: 1000,width: 40,),
+                          ConstrainedBox(
+                              constraints: const BoxConstraints(minHeight: 0),
+                              child: IntrinsicHeight(
+                                child: NavigationRail(
+                                    key: _chatNavigationKey,
+                                    selectedIndex: _selectedChatIndex,
+                                    // backgroundColor: Colors.green,
+                                    selectedIconTheme: const IconThemeData(
+                                        color: Colors.red
+                                    ),
+                                    onDestinationSelected: (int index) {
+                                      setState(() {
+                                        _selectedChatIndex = index;
+                                        _unReadMessageNumber -= _chatRooms[_selectedChatIndex].unReadMessageNumber;
+                                        _chatRooms[_selectedChatIndex].loadUnreadMessages();
+                                      });
 
-                                },
-                                labelType: NavigationRailLabelType.selected,
-                                destinations:
+                                    },
+                                    labelType: NavigationRailLabelType.selected,
+                                    destinations:
                                     List<NavigationRailDestination>.generate(
                                         _chatRooms.length,
-                                          (index) => NavigationRailDestination(
-                                              padding: EdgeInsets.all(0),
-                                              icon: ChatAvatar(_chatRooms[index].generateChatAvatarUri(),false,_chatRooms[index].unReadMessageNumber),
-                                              selectedIcon:ChatAvatar(_chatRooms[index].generateChatAvatarUri(),true,_chatRooms[index].unReadMessageNumber),
-                                              label: Text(
-                                                  overflow: TextOverflow.ellipsis,
-                                                  _chatRooms[index].name
-                                              ),
+                                            (index) => NavigationRailDestination(
+                                          padding: EdgeInsets.all(0),
+                                          icon: ChatAvatar(_chatRooms[index].generateChatAvatarUri(),false,_chatRooms[index].unReadMessageNumber),
+                                          selectedIcon:ChatAvatar(_chatRooms[index].generateChatAvatarUri(),true,_chatRooms[index].unReadMessageNumber),
+                                          label: Text(
+                                              overflow: TextOverflow.ellipsis,
+                                              _chatRooms[index].name
+                                          ),
 
-                                            ))),
-                          )),
-                    ));
+                                        ))),
+                              )),
+                        )
+                    )
+                  );
               }),
               VerticalDivider(thickness: 1, width: 1),
               // This is the main content.
@@ -338,11 +370,11 @@ class GamePageState extends State<GamePage> {
                     messages: _chatRooms[_selectedChatIndex].messages,
                     onSendPressed: _handleSendPressed,
                     user: _user,
-                    showUserAvatars: true,
+                    showUserAvatars: false,
                     showUserNames: true,
                   ),
                 ),
-              )
+              ),
             ],
           ),
         ],
