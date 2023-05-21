@@ -2,6 +2,8 @@ import 'package:flutter/cupertino.dart';
 import "package:flutter/material.dart";
 import "package:my_flutter_app/Models/Room.dart";
 import "package:web_socket_channel/io.dart";
+import "../Widgets/SelectCharacterItem.dart";
+import "../Widgets/SelectCharacterSection.dart";
 import "../common/Global.dart";
 import "../Models/User.dart";
 import "WaitInRoomPage.dart";
@@ -21,6 +23,8 @@ class CreateRoomPageState extends State<CreateRoomPage>{
   GlobalKey _formKey = GlobalKey<FormState>();
   TextEditingController _nameController = TextEditingController();
   TextEditingController _maxPeopleController = TextEditingController();
+
+  List<bool> folkSelected = List<bool>.generate(1, (index) => false);
   void _creatRoom(){
     if(!Global.isOnline){
       Global.channel = IOWebSocketChannel.connect('ws://10.0.2.2:3000',
@@ -72,7 +76,17 @@ class CreateRoomPageState extends State<CreateRoomPage>{
                       decoration: InputDecoration(
                         labelText: "Max people limit",
                       ),
-                    )
+                    ),
+                    Divider(),
+                    SelectCharacterSection("村民",List<SelectCharacterItem>.generate(1,(index){return SelectCharacterItem(Icon(Icons.add));}),folkSelected),
+                    Text("${folkSelected[0]}")
+                    // Divider(),
+                    // SelectCharacterSection("外来者",1),
+                    // Divider(),
+                    // SelectCharacterSection("爪牙",1),
+                    // Divider(),
+                    // SelectCharacterSection("恶魔",1),
+
                   ],
                 )
             ),
