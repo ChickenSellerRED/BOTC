@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:math';
 import 'dart:ui';
 
+import 'package:flutter/material.dart';
 import 'package:flutter_chat_types/flutter_chat_types.dart' as types;
 import 'package:flutter_chat_ui/flutter_chat_ui.dart';
 
@@ -97,6 +98,21 @@ class ChatRoom{
     print("聊天框#${chatRoomNumber}未读消息:${_unReadMessageNumber}");
   }
 
+  String getRemark(){
+    if(!this._isSingle)
+      return "";
+    else
+      return chatUser!.reMark;
+  }
+
+  Color getRemarkColor(){
+
+    if(!this._isSingle)
+      return Colors.blue;
+    if(chatUser!.reMark == "小恶魔" ||chatUser!.reMark == "间谍" ||chatUser!.reMark == "红唇女郎" ||chatUser!.reMark == "投毒者")
+      return Colors.red;
+    else return Colors.blue;
+  }
 
 
 

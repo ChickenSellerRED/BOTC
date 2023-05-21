@@ -12,10 +12,20 @@ class User{
   late String _chatAvatarUri;
   String? _friendCode;
   String _uuid;
-  late bool isAlive;
-  late String character;
+  bool isAlive = true;
+  bool isPoison = false;
+  bool canVote = true;
+  bool isProtected = false;
+  String character = "";
   late String fakeCharacter;
   late int _seatNumber;
+  late String _reMark = "无";
+
+  set reMark(String value) {
+    _reMark = value;
+  }
+
+  String get reMark => _reMark;
 
   int get seatNumber => _seatNumber;
 

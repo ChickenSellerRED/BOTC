@@ -69,8 +69,7 @@ class GamePageState extends State<GamePage> {
   late types.User _user;
 
   GlobalKey _bottomNavigationKey = GlobalKey<State<BottomNavigationBar>>();
-  GlobalKey _chatNavigationKey = GlobalKey();
-  late ScrollController _scrollController;
+  late ScrollController _chatListController = ScrollController();
 
 
   int _unReadMessageNumber = 0;
@@ -89,9 +88,7 @@ class GamePageState extends State<GamePage> {
   void initState() {
 
     print("initState");
-
-    _scrollController = ScrollController();
-    _scrollController.addListener(() {_savedChatOffset = _scrollController.offset;});
+    _chatListController.addListener(() {_savedChatOffset = _chatListController.offset;});
 
 
     _room = widget._args._room;
@@ -157,7 +154,6 @@ class GamePageState extends State<GamePage> {
                             });
                           }else{//没在当前屏幕 加到未读列表
                               room.addUnreadOuterMessage(sender,jsonBody["message"]);
-                              print("${_bottomSelectedIndex} ${_selectedChatIndex} ${index}");
                               setState(() {
                               _unReadMessageNumber ++;
                             });
@@ -227,6 +223,7 @@ class GamePageState extends State<GamePage> {
 
   @override
   Widget build(BuildContext context) {
+    print("build!");
     return Scaffold(
       appBar:
           PreferredSize(preferredSize: Size.fromHeight(0.0), child: AppBar()),
@@ -280,10 +277,9 @@ class GamePageState extends State<GamePage> {
                     ),
                     BlockImgButton(key:UniqueKey(),Icons.chat_outlined, _unReadMessageNumber,
                         onPress: (){
-                          print("chat_outlined clicked!");
-                          setState(() {
                             //切换到聊天页
-                            (_bottomNavigationKey.currentWidget as BottomNavigationBar).onTap!(1);
+                            // (_bottomNavigationKey.currentWidget as BottomNavigationBar).onTap!(1);
+                            _pageController.animateToPage(1, duration: Duration(milliseconds: 500), curve: Curves.ease);
                             //切换到未读聊天页面
                             if(_unReadMessageNumber == 0)
                               return;
@@ -296,9 +292,7 @@ class GamePageState extends State<GamePage> {
                             _unReadMessageNumber -= _chatRooms[unReadIndex].unReadMessageNumber;
                             _chatRooms[unReadIndex].loadUnreadMessages();
                             //控制滑动
-                            _savedChatOffset  = 1000;
-                          });
-
+                            _savedChatOffset  = unReadIndex*100;
                     }
                     ),
                     IconButton(icon: Icon(Icons.campaign_outlined),onPressed: (){},),
@@ -318,11 +312,10 @@ class GamePageState extends State<GamePage> {
                 return Padding(
                     padding: const EdgeInsets.all(0),
                     child: Scrollbar(
-                        controller: _scrollController,
+                        controller: _chatListController,
                         thumbVisibility: true,
                         child:SingleChildScrollView(
-                          key: _chatNavigationKey,
-                          controller: _scrollController,
+                          controller: _chatListController,
                           child:
                           // SizedBox(height: 1000,width: 40,),
                           ConstrainedBox(
@@ -362,23 +355,62 @@ class GamePageState extends State<GamePage> {
                   );
               }),
               VerticalDivider(thickness: 1, width: 1),
-              // This is the main content.
               Expanded(
-                child: Center(
-                  child: Chat(
-                    messages: _chatRooms[_selectedChatIndex].messages,
-                    onSendPressed: _handleSendPressed,
-                    user: _user,
-                    showUserAvatars: false,
-                    showUserNames: true,
+                  child: Column(
+                children: [
+                  Container(
+                    height: 50,
+                    decoration: BoxDecoration(border: Border.all(color: Colors.redAccent,width: 2)),
+                    child: Center(
+                        child:
+                        RichText(
+                          text:
+                            TextSpan(
+                              text:_chatRooms[_selectedChatIndex].name,
+                              style:TextStyle(
+                                color: Colors.green,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 15
+                              ),
+                              children: [
+                                TextSpan(
+                                  text:"    备注:",
+                                  style:TextStyle(
+                                    color: Colors.grey,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 12
+                                ),
+                                ),
+                                TextSpan(
+                                  text:_chatRooms[_selectedChatIndex].getRemark(),
+                                  style:TextStyle(
+                                      color: _chatRooms[_selectedChatIndex].getRemarkColor(),
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 12
+                                  ),
+                                )
+                              ]
+                            )
+                        )),
                   ),
-                ),
-              ),
-              ElevatedButton(onPressed: (){
-                print(_scrollController);
-                print("slide!");
-                _scrollController.animateTo(_scrollController.position.maxScrollExtent, duration: Duration(milliseconds: 500), curve: Curves.ease);
-              }, child: Container())
+                  Expanded(
+                          child: Container(
+                            decoration: BoxDecoration(border: Border.all(color: Colors.blueAccent,width: 2)),
+                            child:
+                            Chat(
+                              messages: _chatRooms[_selectedChatIndex].messages,
+                              onSendPressed: _handleSendPressed,
+                              user: _user,
+                              showUserAvatars: false,
+                              showUserNames: true,
+                              ),
+                          )
+
+                  ),
+                ],
+              ))
+
+
             ],
           ),
         ],
@@ -405,21 +437,18 @@ class GamePageState extends State<GamePage> {
   double _savedChatOffset = 0;
 
   void pageChanged(int index) {
-    print("page change to ${index}");
     if(index != 1)
-      _savedChatOffset = _scrollController.offset;
+      _savedChatOffset = _chatListController.offset;
     if(index == 1){
-      print(_savedChatOffset);
-      print(_scrollController);
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if(_scrollController.hasClients)
-          _scrollController.jumpTo(_savedChatOffset);
-      });
+      print(_chatListController);
+      if(_chatListController.hasClients)
+        _chatListController.jumpTo(_savedChatOffset);
     }
 
-    setState(() {
-      _bottomSelectedIndex = index;
-    });
+    _bottomSelectedIndex = index;
+    // setState(() {
+    //   print("page change to ${index}");
+    // });
   }
 
   @override
